@@ -4,7 +4,7 @@
 
 Plataforma de pedidos para pequenos comércios. Várias lojas num sistema só, cada uma com o seu link e o seu visual, e o pedido saindo pronto para o WhatsApp.
 
-> 🚧 **Em construção.** Etapa atual: **2 de 5, a API** (parte A pronta: banco de dados, catálogo e Swagger).
+> 🚧 **Em construção.** Etapa **2 de 5 concluída: a API** (catálogo, pedidos, login e painel do lojista).
 
 ## Tecnologias
 
@@ -15,9 +15,10 @@ Plataforma de pedidos para pequenos comércios. Várias lojas num sistema só, c
 | Cache | Redis 7 |
 | Documentação | Swagger (OpenAPI), em `/docs` |
 | Infraestrutura | Docker e Docker Compose |
-| Testes | Jest (testes de unidade e de ponta a ponta) |
+| Login | JWT (JSON Web Token) e senhas com bcrypt |
+| Testes | Jest: unidade, ponta a ponta e integração com banco real |
 
-Em breve: pedidos, login do lojista, testes no GitHub Actions e vitrine em Next.js.
+Em breve: cache e limite de pedidos com Redis, testes no GitHub Actions e vitrine em Next.js.
 
 ## Como rodar
 
@@ -47,16 +48,30 @@ Para desligar, use `Ctrl + C` ou rode `docker compose down`.
 
 Todas usam a mesma API. O que muda é o tema (cores, fontes, logo), que fica salvo no banco.
 
+**Para testar o painel no Swagger:**
+
+1. Em `POST /auth/demo-login`, envie `{ "slug": "fome-so" }` e copie o `accessToken`.
+2. Clique em **Authorize** no topo da página e cole o token.
+3. Pronto: as rotas `/panel/...` passam a responder com os dados da Fome-Sô.
+
+Também dá para entrar com e-mail e senha: `lojista@fome-so.pertim.example` e `pertim-demo`.
+
 ### Testes
 
 ```bash
 cd api
 npm install
 npm test           # testes de unidade
-npm run test:e2e   # testes de ponta a ponta
+npm run test:e2e   # testes de ponta a ponta (banco e Redis simulados)
 ```
 
-> Os testes precisam do Node.js 24.9 ou mais novo.
+Os **testes de integração** usam o PostgreSQL de verdade. Com o Docker ligado:
+
+```bash
+DATABASE_URL=postgresql://pertim:pertim@localhost:5433/pertim npm run test:int
+```
+
+> Os testes de integração restauram as lojas de demonstração. Os testes precisam do Node.js 24.9 ou mais novo.
 
 ## Endereços da API
 
@@ -67,7 +82,23 @@ npm run test:e2e   # testes de ponta a ponta
 | GET | `/stores/:slug/categories` | Categorias, com a quantidade de produtos |
 | GET | `/stores/:slug/products` | Produtos, com filtro `?category=` e busca `?search=` |
 | GET | `/stores/:slug/products/:id` | Produto completo: variações e adicionais |
+| POST | `/stores/:slug/orders` | Cria o pedido e devolve a mensagem pronta do WhatsApp |
+| POST | `/auth/login` | Login do lojista (e-mail e senha) |
+| POST | `/auth/demo-login` | Login com um clique nas lojas de demonstração |
 | GET | `/health` | Confere a API, o banco e o Redis |
+
+**Painel do lojista** (exigem login; a loja vem do token, nunca do endereço):
+
+| Método | Endereço | O que faz |
+|---|---|---|
+| GET | `/panel/store` | Dados da minha loja |
+| GET, POST, PATCH, DELETE | `/panel/categories` | Categorias |
+| GET, POST, PATCH, DELETE | `/panel/products` | Produtos |
+| POST, PATCH, DELETE | `/panel/products/:id/variants` | Variações e estoque |
+| PUT | `/panel/products/:id/addon-groups` | Adicionais |
+| GET | `/panel/orders` | Pedidos, com filtro por status e paginação |
+| PATCH | `/panel/orders/:id/status` | Muda o status (cancelar devolve o estoque) |
+| POST | `/panel/demo/reset` | Restaura os dados originais (só lojas de demonstração) |
 
 ## Banco de dados
 
@@ -88,6 +119,7 @@ erDiagram
         string slug "endereço: moda-chic"
         enum segment
         json theme "cores, fontes, logo"
+        int last_order_number "contador dos pedidos"
     }
     PRODUCT {
         uuid id
@@ -115,13 +147,16 @@ pertim-shop/
 │   ├── prisma/             desenho do banco (schema) e migrations
 │   ├── src/
 │   │   ├── stores/         lojas e temas
-│   │   ├── catalog/        categorias e produtos
+│   │   ├── catalog/        categorias e produtos (vitrine)
+│   │   ├── orders/         pedidos, cálculo e mensagem do WhatsApp
+│   │   ├── auth/           login do lojista (JWT)
+│   │   ├── panel/          painel do lojista
 │   │   ├── demo/           dados das lojas de demonstração
 │   │   ├── prisma/         conexão com o banco
 │   │   ├── redis/          conexão com o Redis
 │   │   ├── health/         endpoint /health
 │   │   └── config/         validação das variáveis de ambiente
-│   ├── test/               testes de ponta a ponta
+│   ├── test/               testes de ponta a ponta e de integração
 │   └── Dockerfile          receita da imagem da API
 ├── docker-compose.yml      sobe API, PostgreSQL e Redis juntos
 └── .env.example            modelo das configurações
@@ -130,14 +165,20 @@ pertim-shop/
 ## Decisões técnicas
 
 - **Uma plataforma para várias lojas.** Um sistema só atende todos os comércios. Cliente novo vira um cadastro, não um projeto novo. *Para um único cliente, um site em Next.js com Supabase bastaria.*
-- **Isolamento entre lojas.** Toda consulta começa pela loja e filtra pelo id dela. Um produto de outra loja responde "não encontrado", mesmo com o id certo. Há testes para isso.
+- **Isolamento entre lojas.** Toda consulta filtra pelo id da loja. No painel, a loja vem do token do login, nunca do endereço. Um produto ou pedido de outra loja responde "não encontrado", mesmo com o id certo. Há testes de integração que tentam mexer na loja dos outros.
+- **O servidor calcula o pedido.** O carrinho manda só produto, variação, quantidade e adicionais. O preço sai sempre do banco, e campos extras (como um "total" inventado) são recusados.
+- **Estoque sem venda dobrada.** O estoque baixa num único comando do banco, que só funciona se ainda houver quantidade ("diminua 1, se tiver pelo menos 1"). Num teste com 6 clientes disputando 2 unidades ao mesmo tempo, exatamente 2 conseguem.
+- **Pedido "congelado".** Nome, preço e adicionais ficam gravados no pedido. Se o produto mudar depois, o pedido antigo continua igual.
+- **Número do pedido por loja.** Cada loja tem os seus #1, #2, #3..., gerados por um contador que não repete nem pula, mesmo com pedidos simultâneos.
+- **Fluxo de status.** Um pedido "Novo" não vai direto para "Concluído", e cancelar devolve o estoque reservado.
+- **Login sem sessão no servidor (JWT).** A API não guarda quem está logado; tudo está no token assinado. Por isso dá para rodar várias cópias da API. As senhas são guardadas com bcrypt, e o login responde igual para e-mail inexistente e senha errada.
 - **O visual é um dado, não código.** O tema de cada loja (cores, fontes, logo) fica no banco. Criar uma loja nova ou mudar o visual não exige programar.
 - **Um formato de produto para todos os segmentos.** As *variações* (tamanho, cor, peso, voltagem) guardam preço e estoque; os *adicionais* (bacon, ponto da carne) têm mínimo e máximo de escolhas. Serve para loja de roupas, lanchonete e pet shop.
 - **Preços em centavos.** R$ 19,90 é guardado como 1990, o que evita erros de arredondamento.
 - **O estoque exato não é público.** A vitrine recebe só "disponível" e "últimas unidades".
 - **As fotos ficam fora da API.** Elas são servidas pela vitrine, e a API só guarda o caminho. Isso economiza o tráfego do servidor.
 - **Migrations versionadas.** Cada mudança no banco vira um arquivo SQL no repositório, e qualquer máquina recria o banco igual.
-- **Dados de demonstração num lugar só.** A mesma função cria as lojas no primeiro start e vai servir para o botão "restaurar dados".
+- **Dados de demonstração num lugar só.** A mesma função cria as lojas no primeiro start e restaura a loja no botão "restaurar dados", mantendo o id da loja e do lojista (quem está logado continua logado).
 - **Docker.** Qualquer pessoa clona o repositório e roda tudo com um comando. A imagem tem 3 etapas, leva só o necessário e roda sem permissão de administrador. *Seria exagero num site estático, sem banco.*
 - **`/health` responde 503 quando algo cai.** A hospedagem usa esse código para saber que a API não está saudável.
 - **Nenhum arquivo passa de 300 linhas.** Uma regra automática do linter (oxlint) impede arquivos gigantes.
@@ -146,9 +187,9 @@ pertim-shop/
 ## Roteiro
 
 - [x] **Etapa 1:** ambiente com Docker (API, PostgreSQL e Redis)
-- [ ] **Etapa 2:** API
+- [x] **Etapa 2:** API
   - [x] banco de dados, lojas de demonstração, catálogo e Swagger
-  - [ ] pedidos, login do lojista (JWT) e painel
+  - [x] pedidos, login do lojista (JWT) e painel
 - [ ] **Etapa 3:** cache com Redis, limite de pedidos, testes no GitHub Actions e teste de carga
 - [ ] **Etapa 4:** vitrine em Next.js e painel do lojista
 - [ ] **Etapa 5:** publicação (Render, Neon e Vercel)

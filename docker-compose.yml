@@ -45,6 +45,8 @@ services:
       # Cria as lojas de demonstração (Moda Chic, Fome-Sô e Bicho Bão) se o banco estiver vazio
       SEED_DEMO: "true"
       DEMO_PASSWORD: ${DEMO_PASSWORD:-pertim-demo}
+      # Chave que assina o login (JWT). Em produção, use uma chave longa e secreta.
+      JWT_SECRET: ${JWT_SECRET:-troque-este-segredo-em-producao}
     ports:
       - "3333:3333"
     depends_on:

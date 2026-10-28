@@ -26,6 +26,18 @@ export class StoresService {
     });
   }
 
+  /** Dados da loja pelo id (usado no painel, com o id que vem do login). */
+  async getById(id: string): Promise<StoreDto> {
+    const store = await this.prisma.store.findUnique({ where: { id } });
+    if (!store) {
+      throw new NotFoundException('Loja não encontrada');
+    }
+    return Object.assign(toSummary(store), {
+      whatsapp: store.whatsapp,
+      isDemo: store.isDemo,
+    });
+  }
+
   /**
    * Busca a loja pelo endereço. Usado também pelo catálogo: tudo o que é
    * público começa pela loja, e daí em diante as consultas filtram pelo id

@@ -3,7 +3,7 @@
  * No Docker elas vêm do docker-compose.yml; em produção, do painel da hospedagem.
  * Senhas e endereços nunca ficam escritos no código.
  */
-const REQUIRED_VARIABLES = ['DATABASE_URL', 'REDIS_URL'] as const;
+const REQUIRED_VARIABLES = ['DATABASE_URL', 'REDIS_URL', 'JWT_SECRET'] as const;
 
 export function validateEnv(
   config: Record<string, unknown>,

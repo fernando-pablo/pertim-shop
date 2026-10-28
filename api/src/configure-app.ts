@@ -15,6 +15,8 @@ export function configureApp(app: INestApplication): void {
       whitelist: true,
       forbidNonWhitelisted: true,
       transform: true,
+      // Mostra só o primeiro problema de cada campo, para a mensagem ficar clara.
+      stopAtFirstError: true,
     }),
   );
 
@@ -24,10 +26,16 @@ export function configureApp(app: INestApplication): void {
     .setDescription(
       "Plataforma de pedidos para pequenos comércios. Tudo pertim d'ocê.",
     )
-    .setVersion('0.2.0')
+    .setVersion('0.3.0')
+    // Botão "Authorize" do Swagger: cole o token do login para testar o painel.
+    .addBearerAuth()
     .build();
 
-  SwaggerModule.setup('docs', app, () =>
-    SwaggerModule.createDocument(app, config),
+  SwaggerModule.setup(
+    'docs',
+    app,
+    () => SwaggerModule.createDocument(app, config),
+    // Mantém o token salvo mesmo recarregando a página.
+    { swaggerOptions: { persistAuthorization: true } },
   );
 }

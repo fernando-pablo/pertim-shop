@@ -15,9 +15,8 @@ export interface SeedOptions {
 }
 
 /**
- * Cria (ou recria do zero) as lojas de demonstração com produtos, variações,
- * adicionais e um lojista. A mesma função vai servir para o botão
- * "restaurar dados" do modo demonstração.
+ * Cria (ou restaura) as lojas de demonstração com produtos, variações,
+ * adicionais e um lojista.
  */
 export async function seedDemoStores(
   prisma: PrismaClient,
@@ -30,48 +29,88 @@ export async function seedDemoStores(
 
   const passwordHash = await hash(password, 10);
   for (const demo of DEMO_STORES) {
-    // Cada loja numa transação: ou cria tudo, ou não cria nada.
-    await prisma.$transaction((tx) => recreateStore(tx, demo, passwordHash), {
-      timeout: 30_000,
-    });
+    await restoreStore(prisma, demo, passwordHash);
     log(`Loja criada: ${demo.name} (${demo.products.length} produtos)`);
   }
   return DEMO_STORES.map((demo) => demo.slug);
 }
 
-async function recreateStore(
-  tx: Tx,
+/** Botão "restaurar dados" do modo demonstração: volta a loja ao original. */
+export async function resetDemoStore(
+  prisma: PrismaClient,
+  slug: string,
+  password: string,
+): Promise<DemoStore | null> {
+  const demo = DEMO_STORES.find((store) => store.slug === slug);
+  if (!demo) return null;
+  await restoreStore(prisma, demo, await hash(password, 10));
+  return demo;
+}
+
+/** Cada loja numa transação: ou restaura tudo, ou não muda nada. */
+function restoreStore(
+  prisma: PrismaClient,
   demo: DemoStore,
   passwordHash: string,
 ): Promise<void> {
-  // Apaga a versão antiga; o banco apaga junto tudo o que é dela (cascade).
-  await tx.store.deleteMany({ where: { slug: demo.slug } });
-
-  const store = await tx.store.create({
-    data: {
-      slug: demo.slug,
-      name: demo.name,
-      segment: demo.segment,
-      description: demo.description,
-      whatsapp: demo.whatsapp,
-      theme: demo.theme as unknown as Prisma.InputJsonValue,
-      isDemo: true,
-      merchants: {
-        create: { ...demo.merchant, passwordHash },
-      },
-      categories: {
-        create: demo.categories.map((name, position) => ({ name, position })),
-      },
+  return prisma.$transaction(
+    async (tx) => {
+      const storeId = await upsertStore(tx, demo, passwordHash);
+      const categoryIds = new Map<string, string>();
+      for (const [position, name] of demo.categories.entries()) {
+        const category = await tx.category.create({
+          data: { storeId, name, position },
+        });
+        categoryIds.set(name, category.id);
+      }
+      for (const [position, product] of demo.products.entries()) {
+        await tx.product.create({
+          data: toProductData(demo, product, position, storeId, categoryIds),
+        });
+      }
     },
-    include: { categories: true },
-  });
+    { timeout: 30_000 },
+  );
+}
 
-  const categoryIds = new Map(store.categories.map((c) => [c.name, c.id]));
-  for (const [position, product] of demo.products.entries()) {
-    await tx.product.create({
-      data: toProductData(demo, product, position, store.id, categoryIds),
-    });
+/**
+ * Se a loja já existe, apaga pedidos, produtos e categorias e atualiza os
+ * dados. A loja e o lojista mantêm o mesmo id, então quem está logado no
+ * painel continua logado depois de restaurar.
+ */
+async function upsertStore(
+  tx: Tx,
+  demo: DemoStore,
+  passwordHash: string,
+): Promise<string> {
+  const data = {
+    name: demo.name,
+    segment: demo.segment,
+    description: demo.description,
+    whatsapp: demo.whatsapp,
+    theme: demo.theme as unknown as Prisma.InputJsonValue,
+    isDemo: true,
+    isActive: true,
+    lastOrderNumber: 0,
+  };
+
+  const existing = await tx.store.findUnique({ where: { slug: demo.slug } });
+  const store = existing
+    ? await tx.store.update({ where: { id: existing.id }, data })
+    : await tx.store.create({ data: { slug: demo.slug, ...data } });
+
+  if (existing) {
+    await tx.order.deleteMany({ where: { storeId: store.id } });
+    await tx.product.deleteMany({ where: { storeId: store.id } });
+    await tx.category.deleteMany({ where: { storeId: store.id } });
   }
+
+  await tx.merchant.upsert({
+    where: { email: demo.merchant.email },
+    update: { name: demo.merchant.name, passwordHash, storeId: store.id },
+    create: { ...demo.merchant, passwordHash, storeId: store.id },
+  });
+  return store.id;
 }
 
 function toProductData(

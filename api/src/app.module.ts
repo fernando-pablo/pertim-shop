@@ -1,16 +1,19 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
+import { AuthModule } from './auth/auth.module';
 import { CatalogModule } from './catalog/catalog.module';
 import { validateEnv } from './config/env.validation';
 import { HealthModule } from './health/health.module';
+import { OrdersModule } from './orders/orders.module';
+import { PanelModule } from './panel/panel.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { RedisModule } from './redis/redis.module';
 import { StoresModule } from './stores/stores.module';
 
 /**
  * Módulo raiz: junta todos os outros módulos da API.
- * Cada assunto (banco, Redis, saúde, lojas, catálogo...) fica no seu
+ * Cada assunto (banco, Redis, lojas, catálogo, pedidos, login, painel) fica no seu
  * próprio módulo, com arquivos pequenos.
  */
 @Module({
@@ -22,6 +25,9 @@ import { StoresModule } from './stores/stores.module';
     HealthModule,
     StoresModule,
     CatalogModule,
+    OrdersModule,
+    AuthModule,
+    PanelModule,
   ],
   controllers: [AppController],
 })

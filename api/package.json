@@ -1,6 +1,6 @@
 {
   "name": "pertim-shop-api",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "API do Pertim Shop: plataforma de pedidos para pequenos comércios",
   "author": "Fernando Pablo (Lychnos Tech)",
   "private": true,
@@ -24,12 +24,15 @@
     "db:migrate": "prisma migrate deploy",
     "db:migrate:dev": "prisma migrate dev",
     "db:seed": "npm run build && node dist/demo/seed.cli.js",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "test:int": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config ./test/jest-int.json --runInBand",
+    "pretest:int": "prisma generate"
   },
   "dependencies": {
     "@nestjs/common": "^12.0.1",
     "@nestjs/config": "^12.0.1",
     "@nestjs/core": "^12.0.1",
+    "@nestjs/jwt": "^12.0.3",
     "@nestjs/platform-express": "^12.0.1",
     "@nestjs/swagger": "^12.0.5",
     "@prisma/adapter-pg": "^7.10.1",
