@@ -1,0 +1,55 @@
+# Sobe o Pertim Shop inteiro com um comando:  docker compose up --build
+# São 3 "caixas" (contêineres) que conversam entre si: api, db e redis.
+
+name: pertim-shop
+
+services:
+  # Banco de dados PostgreSQL
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-pertim}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-pertim}
+      POSTGRES_DB: ${POSTGRES_DB:-pertim}
+    ports:
+      # Porta 5433 no seu PC, para não brigar com um PostgreSQL instalado no Windows.
+      - "5433:5432"
+    volumes:
+      # Guarda os dados fora da caixa: desligar o Docker não apaga o banco.
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # Redis: memória rápida para cache (usado a partir da Etapa 3)
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # API em Nest.js, montada a partir do api/Dockerfile
+  api:
+    build: ./api
+    environment:
+      PORT: 3333
+      # Dentro do Docker, cada caixa encontra a outra pelo nome: "db" e "redis".
+      DATABASE_URL: postgresql://${POSTGRES_USER:-pertim}:${POSTGRES_PASSWORD:-pertim}@db:5432/${POSTGRES_DB:-pertim}
+      REDIS_URL: redis://redis:6379
+    ports:
+      - "3333:3333"
+    depends_on:
+      # A API só liga depois que o banco e o Redis estiverem prontos.
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+volumes:
+  db-data:

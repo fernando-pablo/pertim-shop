@@ -1,0 +1,19 @@
+# Dependências e arquivos gerados
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+
+# Variáveis de ambiente: senhas nunca vão para o GitHub
+.env
+.env.*
+!.env.example
+
+# Zips de entrega
+*.zip
+
+# Logs, sistema e editores
+*.log
+.DS_Store
+Thumbs.db
+.idea/

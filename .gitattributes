@@ -1,0 +1,2 @@
+# Padroniza as quebras de linha (Windows x Linux), evitando erros no Docker e no CI.
+* text=auto eol=lf

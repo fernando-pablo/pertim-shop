@@ -1,0 +1,8 @@
+# O que NÃO entra na imagem do Docker
+node_modules
+dist
+coverage
+.env
+.env.*
+*.log
+*.zip
