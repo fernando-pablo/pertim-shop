@@ -1,7 +1,8 @@
 import { ServiceUnavailableException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { HealthController } from './health.controller';
-import { HealthReport, HealthService } from './health.service';
+import { HealthReport } from './dto/health-report.dto';
+import { HealthService } from './health.service';
 
 describe('HealthController', () => {
   const healthService = { check: jest.fn() };

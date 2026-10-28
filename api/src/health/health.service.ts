@@ -1,17 +1,8 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Redis } from 'ioredis';
-import { Pool } from 'pg';
-import { PG_POOL } from '../database/database.module';
+import { PrismaService } from '../prisma/prisma.service';
 import { REDIS_CLIENT } from '../redis/redis.module';
-
-export type CheckStatus = 'ok' | 'error';
-
-export interface HealthReport {
-  status: CheckStatus;
-  api: CheckStatus;
-  database: CheckStatus;
-  redis: CheckStatus;
-}
+import { CheckStatus, HealthReport } from './dto/health-report.dto';
 
 /**
  * Confere se a API consegue falar com o banco e com o Redis.
@@ -22,7 +13,7 @@ export class HealthService {
   private readonly logger = new Logger(HealthService.name);
 
   constructor(
-    @Inject(PG_POOL) private readonly pool: Pool,
+    private readonly prisma: PrismaService,
     @Inject(REDIS_CLIENT) private readonly redis: Redis,
   ) {}
 
@@ -43,7 +34,7 @@ export class HealthService {
 
   private async checkDatabase(): Promise<CheckStatus> {
     try {
-      await this.pool.query('SELECT 1');
+      await this.prisma.$queryRaw`SELECT 1`;
       return 'ok';
     } catch (error) {
       this.logger.warn(`Banco indisponível: ${(error as Error).message}`);

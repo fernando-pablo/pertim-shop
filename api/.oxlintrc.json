@@ -1,8 +1,10 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "ignorePatterns": ["src/generated/**"],
   "rules": {
     "typescript/no-explicit-any": "off",
-    "typescript/no-floating-promises": "error"
+    "typescript/no-floating-promises": "error",
+    "max-lines": ["error", { "max": 300, "skipBlankLines": true, "skipComments": true }]
   },
   "env": {
     "node": true

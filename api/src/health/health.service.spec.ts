@@ -1,5 +1,5 @@
 import { Test } from '@nestjs/testing';
-import { PG_POOL } from '../database/database.module';
+import { PrismaService } from '../prisma/prisma.service';
 import { REDIS_CLIENT } from '../redis/redis.module';
 import { HealthService } from './health.service';
 
@@ -8,7 +8,7 @@ import { HealthService } from './health.service';
  * então os testes rodam em qualquer lugar, sem Docker.
  */
 describe('HealthService', () => {
-  const pool = { query: jest.fn() };
+  const prisma = { $queryRaw: jest.fn() };
   const redis = { ping: jest.fn() };
   let service: HealthService;
 
@@ -18,7 +18,7 @@ describe('HealthService', () => {
     const moduleRef = await Test.createTestingModule({
       providers: [
         HealthService,
-        { provide: PG_POOL, useValue: pool },
+        { provide: PrismaService, useValue: prisma },
         { provide: REDIS_CLIENT, useValue: redis },
       ],
     }).compile();
@@ -27,7 +27,7 @@ describe('HealthService', () => {
   });
 
   it('responde ok quando banco e Redis respondem', async () => {
-    pool.query.mockResolvedValue({ rows: [{ '?column?': 1 }] });
+    prisma.$queryRaw.mockResolvedValue({ rows: [{ '?column?': 1 }] });
     redis.ping.mockResolvedValue('PONG');
 
     await expect(service.check()).resolves.toEqual({
@@ -39,7 +39,7 @@ describe('HealthService', () => {
   });
 
   it('aponta erro no banco quando ele está fora do ar', async () => {
-    pool.query.mockRejectedValue(new Error('connection refused'));
+    prisma.$queryRaw.mockRejectedValue(new Error('connection refused'));
     redis.ping.mockResolvedValue('PONG');
 
     await expect(service.check()).resolves.toEqual({
@@ -51,7 +51,7 @@ describe('HealthService', () => {
   });
 
   it('aponta erro no Redis quando ele está fora do ar', async () => {
-    pool.query.mockResolvedValue({ rows: [] });
+    prisma.$queryRaw.mockResolvedValue({ rows: [] });
     redis.ping.mockRejectedValue(new Error('Connection is closed'));
 
     await expect(service.check()).resolves.toEqual({

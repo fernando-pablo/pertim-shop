@@ -4,6 +4,9 @@ dist/
 coverage/
 *.tsbuildinfo
 
+# Cliente do Prisma: é gerado de novo a cada build (npx prisma generate)
+api/src/generated/
+
 # Variáveis de ambiente: senhas nunca vão para o GitHub
 .env
 .env.*

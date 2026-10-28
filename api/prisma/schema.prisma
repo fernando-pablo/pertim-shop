@@ -1,0 +1,223 @@
+// Desenho do banco de dados do Pertim Shop.
+// Cada "model" vira uma tabela. O Prisma cria as tabelas a partir daqui
+// (migrations) e gera um cliente TypeScript com tudo tipado.
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------- Lojas ----------
+
+enum Segment {
+  CLOTHING              // roupas e acessórios
+  SNACK_BAR             // lanchonete
+  PET_SHOP              // pet shop
+  FURNITURE_ELECTRONICS // móveis e eletrônicos
+  VARIETY               // variedades
+}
+
+model Store {
+  id          String   @id @default(uuid()) @db.Uuid
+  /// Endereço da loja na vitrine. Ex.: "moda-chic"
+  slug        String   @unique
+  name        String
+  segment     Segment
+  description String?
+  /// Número no formato internacional, só dígitos. Ex.: 5538999999999
+  whatsapp    String
+  /// Visual da loja: cores, fontes, logo e capa (ver src/stores/store-theme.ts)
+  theme       Json
+  /// Lojas de demonstração podem ter os dados restaurados
+  isDemo      Boolean  @default(false) @map("is_demo")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  merchants  Merchant[]
+  categories Category[]
+  products   Product[]
+  orders     Order[]
+
+  @@map("stores")
+}
+
+/// Quem entra no painel da loja
+model Merchant {
+  id           String   @id @default(uuid()) @db.Uuid
+  storeId      String   @map("store_id") @db.Uuid
+  name         String
+  email        String   @unique
+  /// Nunca guardamos a senha, só o "hash" dela (bcrypt)
+  passwordHash String   @map("password_hash")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@index([storeId])
+  @@map("merchants")
+}
+
+// ---------- Catálogo ----------
+
+model Category {
+  id       String @id @default(uuid()) @db.Uuid
+  storeId  String @map("store_id") @db.Uuid
+  name     String
+  position Int    @default(0)
+
+  store    Store     @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  products Product[]
+
+  @@unique([storeId, name])
+  @@map("categories")
+}
+
+model Product {
+  id          String   @id @default(uuid()) @db.Uuid
+  storeId     String   @map("store_id") @db.Uuid
+  categoryId  String?  @map("category_id") @db.Uuid
+  name        String
+  description String?
+  /// Preço em centavos: R$ 19,90 = 1990 (evita erro de arredondamento)
+  priceCents  Int      @map("price_cents")
+  imageUrl    String?  @map("image_url")
+  isActive    Boolean  @default(true) @map("is_active")
+  isFeatured  Boolean  @default(false) @map("is_featured")
+  position    Int      @default(0)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  store       Store            @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  category    Category?        @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  variants    ProductVariant[]
+  addonGroups AddonGroup[]
+  orderItems  OrderItem[]
+
+  @@index([storeId, isActive])
+  @@map("products")
+}
+
+/// Versões do produto que o cliente escolhe: "M / Azul", "15 kg", "220 V".
+/// O estoque fica aqui.
+model ProductVariant {
+  id         String  @id @default(uuid()) @db.Uuid
+  productId  String  @map("product_id") @db.Uuid
+  name       String
+  /// Detalhes da variação. Ex.: { "tamanho": "M", "cor": "Azul" }
+  attributes Json    @default("{}")
+  /// Preço próprio da variação. Vazio = usa o preço do produto
+  priceCents Int?    @map("price_cents")
+  /// Quantidade em estoque. Vazio = não controla estoque (ex.: lanches)
+  stock      Int?
+  isActive   Boolean @default(true) @map("is_active")
+  position   Int     @default(0)
+
+  product    Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  orderItems OrderItem[]
+
+  @@index([productId])
+  @@map("product_variants")
+}
+
+/// Grupo de adicionais. Ex.: "Adicionais" (0 a 5) ou "Ponto da carne" (escolher 1)
+model AddonGroup {
+  id        String @id @default(uuid()) @db.Uuid
+  productId String @map("product_id") @db.Uuid
+  name      String
+  /// Mínimo de escolhas. 1 ou mais = obrigatório
+  minSelect Int    @default(0) @map("min_select")
+  /// Máximo de escolhas. 1 = escolha única
+  maxSelect Int    @default(1) @map("max_select")
+  position  Int    @default(0)
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  addons  Addon[]
+
+  @@index([productId])
+  @@map("addon_groups")
+}
+
+model Addon {
+  id         String  @id @default(uuid()) @db.Uuid
+  groupId    String  @map("group_id") @db.Uuid
+  name       String
+  priceCents Int     @default(0) @map("price_cents")
+  isActive   Boolean @default(true) @map("is_active")
+  position   Int     @default(0)
+
+  group AddonGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@index([groupId])
+  @@map("addons")
+}
+
+// ---------- Pedidos ----------
+
+enum Fulfillment {
+  PICKUP   // retirada na loja
+  DELIVERY // entrega
+}
+
+enum OrderStatus {
+  NEW
+  CONFIRMED
+  PREPARING
+  READY
+  OUT_FOR_DELIVERY
+  COMPLETED
+  CANCELED
+}
+
+model Order {
+  id            String      @id @default(uuid()) @db.Uuid
+  storeId       String      @map("store_id") @db.Uuid
+  /// Número amigável, que recomeça em cada loja: #1, #2, #3...
+  number        Int
+  customerName  String      @map("customer_name")
+  customerPhone String      @map("customer_phone")
+  fulfillment   Fulfillment
+  address       String?
+  notes         String?
+  status        OrderStatus @default(NEW)
+  subtotalCents Int         @map("subtotal_cents")
+  totalCents    Int         @map("total_cents")
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+
+  store Store       @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  items OrderItem[]
+
+  @@unique([storeId, number])
+  @@index([storeId, status])
+  @@map("orders")
+}
+
+/// Item do pedido. Nome e preços ficam "congelados": se o produto mudar
+/// depois, o pedido antigo continua igual.
+model OrderItem {
+  id             String  @id @default(uuid()) @db.Uuid
+  orderId        String  @map("order_id") @db.Uuid
+  productId      String? @map("product_id") @db.Uuid
+  variantId      String? @map("variant_id") @db.Uuid
+  productName    String  @map("product_name")
+  variantName    String? @map("variant_name")
+  unitPriceCents Int     @map("unit_price_cents")
+  quantity       Int
+  /// Adicionais escolhidos. Ex.: [{ "name": "Bacon", "priceCents": 400 }]
+  addons         Json    @default("[]")
+  notes          String?
+  totalCents     Int     @map("total_cents")
+
+  order   Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product?        @relation(fields: [productId], references: [id], onDelete: SetNull)
+  variant ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+
+  @@index([orderId])
+  @@map("order_items")
+}

@@ -42,6 +42,9 @@ services:
       # Dentro do Docker, cada caixa encontra a outra pelo nome: "db" e "redis".
       DATABASE_URL: postgresql://${POSTGRES_USER:-pertim}:${POSTGRES_PASSWORD:-pertim}@db:5432/${POSTGRES_DB:-pertim}
       REDIS_URL: redis://redis:6379
+      # Cria as lojas de demonstração (Moda Chic, Fome-Sô e Bicho Bão) se o banco estiver vazio
+      SEED_DEMO: "true"
+      DEMO_PASSWORD: ${DEMO_PASSWORD:-pertim-demo}
     ports:
       - "3333:3333"
     depends_on:

@@ -3,7 +3,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
-import { PG_POOL } from './../src/database/database.module';
+import { configureApp } from './../src/configure-app';
+import { PrismaService } from './../src/prisma/prisma.service';
 import { REDIS_CLIENT } from './../src/redis/redis.module';
 
 /**
@@ -13,7 +14,12 @@ import { REDIS_CLIENT } from './../src/redis/redis.module';
  */
 describe('API (e2e)', () => {
   let app: INestApplication<App>;
-  const pool = { query: jest.fn(), end: jest.fn() };
+  const prisma = {
+    $queryRaw: jest.fn(),
+    store: { findFirst: jest.fn(), findMany: jest.fn() },
+    category: { findMany: jest.fn() },
+    product: { findMany: jest.fn(), findFirst: jest.fn() },
+  };
   const redis = { ping: jest.fn(), quit: jest.fn(), disconnect: jest.fn() };
 
   beforeEach(async () => {
@@ -22,13 +28,14 @@ describe('API (e2e)', () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     })
-      .overrideProvider(PG_POOL)
-      .useValue(pool)
+      .overrideProvider(PrismaService)
+      .useValue(prisma)
       .overrideProvider(REDIS_CLIENT)
       .useValue(redis)
       .compile();
 
     app = moduleFixture.createNestApplication();
+    configureApp(app);
     await app.init();
   });
 
@@ -46,7 +53,7 @@ describe('API (e2e)', () => {
   });
 
   it('GET /health responde 200 quando banco e Redis estão ok', () => {
-    pool.query.mockResolvedValue({ rows: [] });
+    prisma.$queryRaw.mockResolvedValue([{ '?column?': 1 }]);
     redis.ping.mockResolvedValue('PONG');
 
     return request(app.getHttpServer()).get('/health').expect(200).expect({
@@ -58,7 +65,7 @@ describe('API (e2e)', () => {
   });
 
   it('GET /health responde 503 quando o banco está fora do ar', () => {
-    pool.query.mockRejectedValue(new Error('connection refused'));
+    prisma.$queryRaw.mockRejectedValue(new Error('connection refused'));
     redis.ping.mockResolvedValue('PONG');
 
     return request(app.getHttpServer())
@@ -67,5 +74,32 @@ describe('API (e2e)', () => {
       .expect((response) => {
         expect(response.body.database).toBe('error');
       });
+  });
+
+  it('GET /stores/:slug responde 404 para loja que não existe', () => {
+    prisma.store.findFirst.mockResolvedValue(null);
+
+    return request(app.getHttpServer())
+      .get('/stores/loja-que-nao-existe')
+      .expect(404)
+      .expect((response) => {
+        expect(response.body.message).toBe('Loja não encontrada');
+      });
+  });
+
+  it('recusa id de produto inválido com 400', () => {
+    return request(app.getHttpServer())
+      .get('/stores/moda-chic/products/nao-e-um-id')
+      .expect(400);
+  });
+
+  it('recusa filtros desconhecidos com 400', () => {
+    return request(app.getHttpServer())
+      .get('/stores/moda-chic/products?preco=0')
+      .expect(400);
+  });
+
+  it('GET /docs mostra a documentação (Swagger)', () => {
+    return request(app.getHttpServer()).get('/docs').expect(200);
   });
 });

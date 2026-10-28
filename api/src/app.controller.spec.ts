@@ -12,11 +12,12 @@ describe('AppController', () => {
     appController = app.get<AppController>(AppController);
   });
 
-  it('retorna o nome da API e onde fica o /health', () => {
+  it('retorna o nome da API e onde ficam o /health e o /docs', () => {
     expect(appController.getInfo()).toEqual({
       name: 'Pertim Shop API',
       slogan: "Tudo pertim d'ocê.",
       health: '/health',
+      docs: '/docs',
     });
   });
 });
