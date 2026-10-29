@@ -30,7 +30,10 @@ async function CartContent({ params }: PageProps<'/[slug]/carrinho'>) {
         showCart={false}
       />
       <main className="mx-auto max-w-xl px-4">
-        <CartView store={{ slug, name: store.name }} apiUrl={publicApiUrl()} />
+        <CartView
+          store={{ slug, name: store.name, isDemo: store.isDemo }}
+          apiUrl={publicApiUrl()}
+        />
       </main>
       <StoreFooter />
     </>

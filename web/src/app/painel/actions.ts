@@ -6,6 +6,7 @@ import { redirect } from 'next/navigation';
 import { apiUrl } from '@/lib/api';
 import { isOrderStatus } from '@/lib/order-status';
 import { isUuid, PanelApiError, updateOrderStatus } from '@/lib/panel-api';
+import { resetDemoStore } from '@/lib/panel-catalog-api';
 import {
   SESSION_COOKIE,
   SESSION_PATH,
@@ -88,4 +89,18 @@ export async function changeOrderStatus(
   }
   refresh();
   return undefined;
+}
+
+/**
+ * Volta a loja de demonstração ao original (a API recusa nas lojas de
+ * verdade) e abre a lista de pedidos, que agora está vazia.
+ */
+export async function resetDemo(): Promise<ActionResult> {
+  try {
+    await resetDemoStore();
+  } catch (error) {
+    if (error instanceof PanelApiError) return { error: error.message };
+    throw error;
+  }
+  redirect('/painel?restaurado=1');
 }

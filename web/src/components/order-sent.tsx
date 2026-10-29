@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect } from 'react';
 import { formatBRL } from '@/lib/money';
 import type { OrderCreated } from '@/lib/types';
+import { DemoPanelButton } from './demo-panel-button';
 import { ChatIcon, CheckIcon } from './icons';
 
 /**
@@ -13,9 +14,11 @@ import { ChatIcon, CheckIcon } from './icons';
 export function OrderSent({
   store,
   result,
+  apiUrl,
 }: {
   store: { slug: string; name: string };
   result: OrderCreated;
+  apiUrl: string;
 }) {
   const { order, whatsapp, isDemo } = result;
 
@@ -58,12 +61,14 @@ export function OrderSent({
             </div>
           </div>
           {/* Para quem visita o portfólio ver o outro lado: o painel. */}
-          <Link
-            href={`/painel/entrar?loja=${store.slug}&pedido=${order.id}`}
-            className="flex h-12 items-center justify-center rounded-store bg-primary font-bold text-on-primary no-underline"
+          <DemoPanelButton
+            slug={store.slug}
+            apiUrl={apiUrl}
+            orderId={order.id}
+            className="flex h-12 w-full items-center justify-center rounded-store bg-primary font-bold text-on-primary"
           >
             Ver este pedido no painel do lojista
-          </Link>
+          </DemoPanelButton>
         </section>
       ) : (
         <section className="flex flex-col gap-3">

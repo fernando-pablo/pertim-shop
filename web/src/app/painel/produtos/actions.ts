@@ -8,7 +8,6 @@ import {
   createProduct,
   deleteProduct,
   replaceAddonGroups,
-  resetDemoStore,
   setProductFlags,
   updateProduct,
   updateVariant,
@@ -115,16 +114,6 @@ export async function saveAddonGroups(
   const result = await callApi(
     () => replaceAddonGroups(productId, groups),
     'Adicionais salvos.',
-  );
-  refresh();
-  return result;
-}
-
-/** Só nas lojas de demonstração (a API recusa nas outras). */
-export async function resetDemo(): Promise<ActionResult> {
-  const result = await callApi(
-    () => resetDemoStore(),
-    'Pronto: a loja voltou aos dados originais.',
   );
   refresh();
   return result;

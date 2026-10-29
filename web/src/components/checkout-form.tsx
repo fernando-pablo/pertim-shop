@@ -27,11 +27,13 @@ const OPTIONS: { value: Fulfillment; label: string; hint: string }[] = [
  */
 export function CheckoutForm({
   slug,
+  isDemo,
   apiUrl,
   cart,
   onSent,
 }: {
   slug: string;
+  isDemo: boolean;
   apiUrl: string;
   cart: Cart;
   onSent: (result: OrderCreated) => void;
@@ -80,6 +82,12 @@ export function CheckoutForm({
   return (
     <form onSubmit={submit} noValidate className="flex flex-col gap-4">
       <h2 className="font-heading text-2xl font-semibold">Finalizar pedido</h2>
+      {isDemo && (
+        <p className="rounded-store bg-soft px-4 py-3 text-sm">
+          <strong>Loja de demonstração:</strong> use um nome e um telefone de
+          teste. Outras pessoas que testam a demonstração podem ver este pedido.
+        </p>
+      )}
 
       <div className="flex flex-col gap-2">
         <label htmlFor="nome" className="font-bold">

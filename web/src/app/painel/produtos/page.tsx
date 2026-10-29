@@ -4,7 +4,6 @@ import { Suspense } from 'react';
 import { PanelHeader } from '@/components/panel/panel-header';
 import { PanelSkeleton } from '@/components/panel/panel-skeleton';
 import { ProductAdminList } from '@/components/panel/product-admin-list';
-import { ResetDemo } from '@/components/panel/reset-demo';
 import { getSession } from '@/lib/panel-api';
 import { getPanelCategories, getPanelProducts } from '@/lib/panel-catalog-api';
 
@@ -46,7 +45,6 @@ async function ProductsContent() {
           </Link>
         </div>
         <ProductAdminList products={products} categories={categories} />
-        {session.store.isDemo && <ResetDemo storeName={session.store.name} />}
       </main>
     </>
   );

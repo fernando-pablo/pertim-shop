@@ -5,6 +5,7 @@ import { AuthModule } from './auth/auth.module';
 import { CatalogCacheModule } from './cache/catalog-cache.module';
 import { CatalogModule } from './catalog/catalog.module';
 import { validateEnv } from './config/env.validation';
+import { DemoModule } from './demo/demo.module';
 import { HealthModule } from './health/health.module';
 import { OrdersModule } from './orders/orders.module';
 import { PanelModule } from './panel/panel.module';
@@ -30,6 +31,7 @@ import { StoresModule } from './stores/stores.module';
     OrdersModule,
     AuthModule,
     PanelModule,
+    DemoModule,
   ],
   controllers: [AppController],
 })

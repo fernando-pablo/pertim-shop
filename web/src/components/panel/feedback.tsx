@@ -28,11 +28,14 @@ export function ConfirmButton({
   question,
   confirmLabel,
   onConfirm,
+  triggerClassName = 'h-11 w-fit rounded-xl px-1 font-semibold text-red-800 underline',
 }: {
   label: string;
   question: string;
   confirmLabel: string;
   onConfirm: () => Promise<ActionResult>;
+  /** Visual do botão antes de confirmar (padrão: link vermelho) */
+  triggerClassName?: string;
 }) {
   const [asking, setAsking] = useState(false);
   const [result, setResult] = useState<ActionResult>(undefined);
@@ -76,7 +79,7 @@ export function ConfirmButton({
             setResult(undefined);
             setAsking(true);
           }}
-          className="h-11 w-fit rounded-xl px-1 font-semibold text-red-800 underline"
+          className={triggerClassName}
         >
           {label}
         </button>

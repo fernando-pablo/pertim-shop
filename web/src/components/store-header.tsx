@@ -1,6 +1,8 @@
 import Link from 'next/link';
+import { publicApiUrl } from '@/lib/api';
 import type { Store } from '@/lib/types';
 import { CartButton } from './cart-links';
+import { DemoPanelButton } from './demo-panel-button';
 import { BackIcon } from './icons';
 import { StoreLogo } from './store-theme';
 
@@ -19,9 +21,22 @@ export function StoreHeader({
   return (
     <>
       {store.isDemo && (
-        <p className="bg-ink px-4 py-1.5 text-center text-xs font-medium text-bg">
-          Loja de demonstração: os pedidos são simulados.
-        </p>
+        // Faixa da demonstração: o visitante vê os dois lados, a loja e o
+        // painel do lojista desta loja, sem precisar fazer um pedido antes.
+        <div className="bg-ink text-bg">
+          <div className="mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 py-1.5 text-xs">
+            <p className="font-medium">
+              Loja de demonstração: os pedidos são simulados.
+            </p>
+            <DemoPanelButton
+              slug={store.slug}
+              apiUrl={publicApiUrl()}
+              className="rounded-full bg-bg px-3 py-1 font-bold text-ink"
+            >
+              Área do lojista
+            </DemoPanelButton>
+          </div>
+        </div>
       )}
       <header className="mx-auto flex max-w-3xl items-center justify-between gap-3 px-4 py-3">
         <div className="flex min-w-0 items-center gap-2">

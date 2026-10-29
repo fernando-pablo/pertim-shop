@@ -53,9 +53,11 @@ Todas usam o mesmo código. O que muda é o tema (cores, fontes, cantos), que fi
 
 As fotos das lojas de demonstração são do [Unsplash](https://unsplash.com) e seguem a [licença do Unsplash](https://unsplash.com/license), que permite o uso gratuito. A lista com o link de cada foto está em [`web/public/demo/CREDITOS.md`](web/public/demo/CREDITOS.md).
 
-**Para testar o painel do lojista:** abra http://localhost:3000/painel e clique numa loja de demonstração. Faça um pedido na vitrine dessa loja: em até 15 segundos ele aparece no painel, onde dá para confirmar, preparar, concluir ou cancelar. Na tela de "pedido criado", o botão "Ver este pedido no painel do lojista" leva direto para o outro lado.
+**Para testar o painel do lojista:** em qualquer loja de demonstração, clique em **Área do lojista**, na faixa do topo. O painel daquela loja abre direto, com um "Como testar" e o botão "Restaurar dados da demonstração" no alto. Faça um pedido na loja: em até 15 segundos ele aparece no painel, onde dá para confirmar, preparar, concluir ou cancelar. Na tela de "pedido criado", o botão "Ver este pedido no painel do lojista" abre o pedido direto no painel.
 
-No painel também dá para pausar, destacar, editar e criar produtos (preço, estoque de cada opção e adicionais) e cuidar das categorias. A mudança aparece na vitrine na hora. Nas lojas de demonstração, o botão "Restaurar dados da demonstração" volta tudo ao original.
+No painel também dá para pausar, destacar, editar e criar produtos (preço, estoque de cada opção e adicionais) e cuidar das categorias. A mudança aparece na vitrine na hora. As lojas de demonstração voltam ao original sozinhas uma vez por dia (`DEMO_RESET_HOURS`, padrão 24 horas).
+
+A entrada geral do painel fica em http://localhost:3000/painel, com as lojas de demonstração e o login com e-mail e senha.
 
 **Para testar as rotas do painel no Swagger:**
 
@@ -254,6 +256,8 @@ pertim-shop/
 - **Pedido novo aparece sozinho.** A lista de pedidos se atualiza a cada 15 segundos, só com a aba aberta na tela, para não gastar a API à toa. *Com muitos lojistas, o próximo passo seria avisar em tempo real (WebSocket ou Server-Sent Events).*
 - **Server Actions no painel.** Os formulários chamam funções que rodam no servidor da vitrine. Cada uma confere de novo tudo o que veio do navegador (formato, tamanho, regras de mínimo e máximo dos adicionais), usando as mesmas funções da tela, e só então chama a API, que confere mais uma vez. O Next.js ainda confere a origem de cada chamada (proteção contra CSRF).
 - **Mudou no painel, mudou na loja.** Toda alteração de produto ou categoria passa pelo interceptor que apaga o cache da vitrine na API. Testado: pausar um produto tira ele da loja na mesma hora.
+- **Demonstração que se limpa sozinha.** Todo visitante usa as mesmas lojas de demonstração, então os pedidos de teste se acumulam (com o nome e o telefone que a pessoa digitou). A cada hora, a API confere se já passou um dia desde a última limpeza e, se passou, volta a loja ao original. Quem decide é um único comando do Redis, `SET chave NX EX 86400`: ele só grava se a chave não existe e a chave some sozinha depois de 24 horas. Com várias cópias da API rodando, só uma consegue gravar, e a loja é restaurada uma vez só. Lojas de verdade nunca são tocadas. O carrinho das lojas de demonstração também avisa para usar dados de teste.
+- **Os dois lados na demonstração.** Cada loja de demonstração tem o botão "Área do lojista" na faixa do topo: um clique e o visitante está no painel daquela loja, sem escolher entre outras. Numa loja de verdade, o cliente não vê esse botão; o lojista entra por `/painel` com e-mail e senha.
 - **Busca do painel sem acento.** "racao" acha "Ração", porque a busca tira os acentos antes de comparar.
 - **Horário no fuso de Brasília.** O servidor roda em UTC; o painel mostra os horários fixando o fuso `America/Sao_Paulo`.
 - **Demonstração honesta.** Nas lojas de demonstração, a vitrine avisa no topo que os pedidos são simulados e mostra a mensagem do WhatsApp numa simulação, sem enviar nada.

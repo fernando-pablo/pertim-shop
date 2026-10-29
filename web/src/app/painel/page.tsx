@@ -46,6 +46,11 @@ async function OrdersContent({ searchParams }: PageProps<'/painel'>) {
           <h1 className="text-3xl font-extrabold">Pedidos</h1>
           <AutoRefresh seconds={15} />
         </div>
+        {query.restaurado === '1' && (
+          <p className="rounded-xl bg-green-100 px-4 py-3 text-sm font-semibold text-green-900">
+            Pronto: a loja voltou aos dados originais.
+          </p>
+        )}
         <StatusFilter current={status} />
 
         {orders.data.length > 0 ? (

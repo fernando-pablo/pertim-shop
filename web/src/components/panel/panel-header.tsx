@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { signOut } from '@/app/painel/actions';
 import type { PanelSession } from '@/lib/types';
+import { DemoBar } from './demo-bar';
 
 export type PanelSection = 'pedidos' | 'produtos' | 'categorias';
 
@@ -74,6 +75,7 @@ export function PanelHeader({
           );
         })}
       </nav>
+      {store.isDemo && <DemoBar />}
     </header>
   );
 }

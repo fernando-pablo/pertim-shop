@@ -22,6 +22,8 @@ export const cacheKeys = {
   /** Uma resposta do catálogo, presa a uma versão */
   catalog: (storeId: string, version: string, name: string) =>
     `${PREFIX}:catalog:${storeId}:${version}:${name}`,
+  /** Marca a última restauração automática de uma loja de demonstração */
+  demoReset: (slug: string) => `${PREFIX}:demo:reset:${slug}`,
   /** Contador do limite de tentativas */
   rateLimit: (rule: string, client: string) =>
     `${PREFIX}:limit:${rule}:${client}`,

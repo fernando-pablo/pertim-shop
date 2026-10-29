@@ -23,6 +23,10 @@ export class FakeRedis {
     return this.run(() => this.write(key, value, options));
   }
 
+  del(key: string): Promise<number> {
+    return this.run(() => (this.data.delete(key) ? 1 : 0));
+  }
+
   incr(key: string): Promise<number> {
     return this.run(() => this.increment(key));
   }

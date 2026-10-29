@@ -14,6 +14,7 @@ import { QuantityStepper } from './quantity-stepper';
 export interface CartStore {
   slug: string;
   name: string;
+  isDemo: boolean;
 }
 
 /** Carrinho: itens, quantidades, total e o formulário para finalizar. */
@@ -28,7 +29,7 @@ export function CartView({
   const [cart, updateCart] = useCart(store.slug);
   const [sent, setSent] = useState<OrderCreated | null>(null);
 
-  if (sent) return <OrderSent store={store} result={sent} />;
+  if (sent) return <OrderSent store={store} result={sent} apiUrl={apiUrl} />;
   if (!hydrated)
     return (
       <p className="py-10 text-center text-muted">Carregando o carrinho…</p>
@@ -109,6 +110,7 @@ export function CartView({
       </p>
       <CheckoutForm
         slug={store.slug}
+        isDemo={store.isDemo}
         apiUrl={apiUrl}
         cart={cart}
         onSent={(result) => {

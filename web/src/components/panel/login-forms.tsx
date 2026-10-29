@@ -2,9 +2,9 @@
 
 import { type FormEvent, useState, useTransition } from 'react';
 import { startSession } from '@/app/painel/actions';
-import { apiErrorMessage } from '@/lib/order';
+import { loginAtApi } from '@/lib/panel-login';
 import { SEGMENT_LABELS } from '@/lib/theme';
-import type { AuthResponse, StoreSummary } from '@/lib/types';
+import type { StoreSummary } from '@/lib/types';
 import { StoreLogo, StoreTheme } from '../store-theme';
 
 type Where = 'demo' | 'email';
@@ -33,16 +33,10 @@ const inputClass =
 export function LoginForms({
   apiUrl,
   demoStores,
-  highlight,
-  next,
   expired,
 }: {
   apiUrl: string;
   demoStores: StoreSummary[];
-  /** Loja em que o visitante acabou de pedir (vem do link da simulação) */
-  highlight?: string;
-  /** Pedido para abrir depois de entrar */
-  next?: string;
   expired: boolean;
 }) {
   const [email, setEmail] = useState('');
@@ -55,43 +49,23 @@ export function LoginForms({
   const [saving, startSaving] = useTransition();
   const busy = waiting !== null || saving;
 
-  async function login(path: string, body: object, key: string) {
+  async function login(
+    path: '/auth/login' | '/auth/demo-login',
+    body: object,
+    key: string,
+  ) {
     const where: Where = key === 'email' ? 'email' : 'demo';
     setError(null);
     setWaiting(key);
-    let response: Response;
-    let data: unknown;
-    try {
-      response = await fetch(`${apiUrl}${path}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-      data = await response.json().catch(() => null);
-    } catch {
-      const text =
-        'Sem conexão com a loja. Confira a internet e tente de novo.';
-      setError({ where, text });
+    const outcome = await loginAtApi(apiUrl, path, body);
+    if ('error' in outcome) {
+      setError({ where, text: outcome.error });
       setWaiting(null);
       return;
     }
-    if (!response.ok) {
-      const fallback = 'Não foi possível entrar. Tente de novo.';
-      setError({
-        where,
-        text: apiErrorMessage(response.status, data, fallback),
-      });
-      setWaiting(null);
-      return;
-    }
-
-    const { accessToken } = data as AuthResponse;
     startSaving(async () => {
       // Deu certo: o servidor guarda o cookie e abre o painel.
-      const result = await startSession(
-        accessToken,
-        key === highlight ? next : undefined,
-      );
+      const result = await startSession(outcome.token);
       if (result) setError({ where, text: result.error });
       setWaiting(null);
     });
@@ -121,9 +95,7 @@ export function LoginForms({
               Conhecer o painel
             </h2>
             <p className="text-sm text-muted">
-              {highlight
-                ? 'Você acabou de fazer um pedido. Entre como lojista para ver o pedido chegando do outro lado.'
-                : 'Entre numa loja de demonstração com um clique.'}
+              Entre numa loja de demonstração com um clique.
             </p>
           </div>
           <ul className="flex flex-col gap-3">
@@ -140,9 +112,7 @@ export function LoginForms({
                         store.slug,
                       )
                     }
-                    className={`flex w-full items-center gap-4 border border-line p-4 text-left text-ink disabled:opacity-60 ${
-                      store.slug === highlight ? 'ring-3 ring-primary' : ''
-                    }`}
+                    className="flex w-full items-center gap-4 border border-line p-4 text-left text-ink disabled:opacity-60"
                   >
                     <StoreLogo store={store} size={44} square />
                     <span className="flex flex-1 flex-col gap-1">
