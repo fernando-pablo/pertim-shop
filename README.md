@@ -6,7 +6,7 @@
 
 Plataforma de pedidos para pequenos comércios. Várias lojas num sistema só, cada uma com o seu link e o seu visual, e o pedido saindo pronto para o WhatsApp.
 
-> 🚧 **Em construção.** Etapas **1 a 3 de 5 concluídas:** a API está pronta, com catálogo, pedidos, painel do lojista, cache, limite de tentativas, testes automáticos e teste de carga. **Etapa 4 em andamento:** a vitrine em Next.js já funciona (loja, produto, carrinho e pedido); faltam o painel do lojista e o acabamento.
+> 🚧 **Em construção.** Etapas **1 a 3 de 5 concluídas:** a API está pronta, com catálogo, pedidos, painel do lojista, cache, limite de tentativas, testes automáticos e teste de carga. **Etapa 4 em andamento:** a vitrine em Next.js já funciona (loja, produto, carrinho e pedido), e o painel do lojista já recebe e acompanha os pedidos; faltam os produtos no painel e o acabamento.
 
 ## Tecnologias
 
@@ -34,6 +34,7 @@ docker compose up --build
 O comando sobe a **vitrine**, a **API**, o **PostgreSQL** e o **Redis**, cria as tabelas (migrations) e, se o banco estiver vazio, cria três lojas de demonstração. Depois abra no navegador:
 
 - http://localhost:3000: a vitrine, com as lojas
+- http://localhost:3000/painel: o painel do lojista (dá para entrar numa loja de demonstração com um clique)
 - http://localhost:3333/docs: documentação interativa da API (Swagger)
 - http://localhost:3333/stores: lojas da plataforma
 - http://localhost:3333/health: saúde da API
@@ -52,7 +53,9 @@ Todas usam o mesmo código. O que muda é o tema (cores, fontes, cantos), que fi
 
 As fotos das lojas de demonstração são do [Unsplash](https://unsplash.com) e seguem a [licença do Unsplash](https://unsplash.com/license), que permite o uso gratuito. A lista com o link de cada foto está em [`web/public/demo/CREDITOS.md`](web/public/demo/CREDITOS.md).
 
-**Para testar o painel no Swagger:**
+**Para testar o painel do lojista:** abra http://localhost:3000/painel e clique numa loja de demonstração. Faça um pedido na vitrine dessa loja: em até 15 segundos ele aparece no painel, onde dá para confirmar, preparar, concluir ou cancelar.
+
+**Para testar as rotas do painel no Swagger:**
 
 1. Em `POST /auth/demo-login`, envie `{ "slug": "fome-so" }` e copie o `accessToken`.
 2. Clique em **Authorize** no topo da página e cole o token.
@@ -191,7 +194,8 @@ O desenho completo fica em [`api/prisma/schema.prisma`](api/prisma/schema.prisma
 ```
 pertim-shop/
 ├── web/                    vitrine em Next.js
-│   ├── src/app/            páginas: início, loja, produto e carrinho
+│   ├── src/app/            páginas: início, loja, produto, carrinho e painel do lojista
+│   ├── src/proxy.ts        "porteiro" do painel: sem login, vai para a tela de entrada
 │   ├── src/components/     partes da tela (tema da loja, produto, carrinho...)
 │   ├── src/lib/            regras do carrinho, das opções e do pedido (com testes)
 │   └── Dockerfile          receita da imagem da vitrine
@@ -242,6 +246,11 @@ pertim-shop/
 - **Carrinho no navegador.** Fica salvo no `localStorage`, um por loja: continua lá se o cliente fechar a página, sem precisar de login.
 - **O preço do carrinho é só uma prévia.** A vitrine manda para a API apenas o que o cliente escolheu; o total de verdade a API calcula com os preços do banco.
 - **O pedido vai direto do navegador para a API.** Assim o limite de tentativas enxerga o IP de cada cliente, e não o do servidor da vitrine.
+- **Login do painel num cookie protegido.** O token fica num cookie `httpOnly` (o JavaScript da página não consegue ler), `SameSite=Lax`, válido só nas páginas `/painel` e enviado só por HTTPS em produção. Um script malicioso na página não rouba o login, como aconteceria com o `localStorage`.
+- **O login também vai direto do navegador para a API.** Assim o limite de tentativas conta o IP de cada pessoa. Depois, uma Server Action confere o token na API e o guarda no cookie. *Se o login passasse pelo servidor da vitrine, todo mundo apareceria com o mesmo IP e dividiria o mesmo limite.*
+- **Duas checagens no painel.** O `proxy.ts` do Next.js olha o cookie antes da página (sem login ou com o login vencido, vai para a tela de entrada). Mas quem decide de verdade é a API, que confere a assinatura do token em cada pedido de dados. Os botões de situação seguem a mesma regra da API, que confere de novo.
+- **Pedido novo aparece sozinho.** A lista de pedidos se atualiza a cada 15 segundos, só com a aba aberta na tela, para não gastar a API à toa. *Com muitos lojistas, o próximo passo seria avisar em tempo real (WebSocket ou Server-Sent Events).*
+- **Horário no fuso de Brasília.** O servidor roda em UTC; o painel mostra os horários fixando o fuso `America/Sao_Paulo`.
 - **Demonstração honesta.** Nas lojas de demonstração, a vitrine avisa no topo que os pedidos são simulados e mostra a mensagem do WhatsApp numa simulação, sem enviar nada.
 - **Acessível e legível.** Botões, rótulos e campos de verdade (dá para usar pelo teclado), e contraste conferido: cores que não passavam (texto branco no verde, dourado em texto pequeno) ganharam versões mais escuras no tema.
 - **Fontes guardadas no projeto.** As fontes vêm do Fontsource (npm), sem depender do Google na hora de montar ou abrir o site.
@@ -267,7 +276,8 @@ pertim-shop/
   - [x] teste de carga com k6
 - [ ] **Etapa 4:** parte visual
   - [x] vitrine: lojas, produto, carrinho e pedido pelo WhatsApp
-  - [ ] painel do lojista
+  - [x] painel do lojista: entrada e pedidos
+  - [ ] painel do lojista: produtos e categorias
   - [x] fotos dos produtos e página inicial nova
   - [ ] acabamento: "experimentar outro estilo", QR Code e PWA
 - [ ] **Etapa 5:** publicação (Render, Neon e Vercel)

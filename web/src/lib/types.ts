@@ -31,11 +31,12 @@ export interface StoreSummary {
   segment: Segment;
   description: string | null;
   theme: StoreTheme;
+  /** Loja de demonstração: os pedidos são simulados */
+  isDemo: boolean;
 }
 
 export interface Store extends StoreSummary {
   whatsapp: string;
-  isDemo: boolean;
 }
 
 export interface Category {
@@ -96,4 +97,59 @@ export interface OrderCreated {
   };
   whatsapp: { phone: string; message: string; url: string };
   isDemo: boolean;
+}
+
+/* Painel do lojista */
+
+export type OrderStatus =
+  | 'NEW'
+  | 'CONFIRMED'
+  | 'PREPARING'
+  | 'READY'
+  | 'OUT_FOR_DELIVERY'
+  | 'COMPLETED'
+  | 'CANCELED';
+
+/** Item do pedido, com nome e preço "congelados" no momento da compra. */
+export interface OrderItem {
+  productName: string;
+  variantName: string | null;
+  quantity: number;
+  unitPriceCents: number;
+  totalCents: number;
+  addons: { name: string; priceCents: number }[];
+  notes: string | null;
+}
+
+export interface PanelOrder {
+  id: string;
+  number: number;
+  status: OrderStatus;
+  customerName: string;
+  customerPhone: string;
+  fulfillment: Fulfillment;
+  address: string | null;
+  notes: string | null;
+  subtotalCents: number;
+  totalCents: number;
+  /** Data em texto (ISO), do jeito que vem no JSON */
+  createdAt: string;
+  items: OrderItem[];
+}
+
+export interface OrdersPage {
+  data: PanelOrder[];
+  page: number;
+  pageSize: number;
+  total: number;
+}
+
+/** Quem está logado no painel (rota /auth/me). */
+export interface PanelSession {
+  merchant: { id: string; name: string; email: string };
+  store: { slug: string; name: string; isDemo: boolean };
+}
+
+export interface AuthResponse extends PanelSession {
+  accessToken: string;
 }

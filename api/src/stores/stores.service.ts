@@ -51,10 +51,7 @@ export class StoresService {
   /** Dados públicos de uma loja ativa. */
   async getBySlug(slug: string): Promise<StoreDto> {
     const store = await this.findActiveBySlug(slug);
-    return Object.assign(toSummary(store), {
-      whatsapp: store.whatsapp,
-      isDemo: store.isDemo,
-    });
+    return Object.assign(toSummary(store), { whatsapp: store.whatsapp });
   }
 
   /** Dados da loja pelo id (usado no painel, com o id que vem do login). */
@@ -63,10 +60,7 @@ export class StoresService {
     if (!store) {
       throw new NotFoundException('Loja não encontrada');
     }
-    return Object.assign(toSummary(store), {
-      whatsapp: store.whatsapp,
-      isDemo: store.isDemo,
-    });
+    return Object.assign(toSummary(store), { whatsapp: store.whatsapp });
   }
 
   /**
@@ -98,5 +92,6 @@ function toSummary(store: PublicStore): StoreSummaryDto {
     segment: store.segment,
     description: store.description,
     theme: store.theme as unknown as StoreTheme,
+    isDemo: store.isDemo,
   };
 }

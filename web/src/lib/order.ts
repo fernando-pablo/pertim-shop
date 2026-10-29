@@ -61,7 +61,11 @@ export function validateCheckout(form: CheckoutForm): string | null {
 }
 
 /** Transforma a resposta de erro da API numa frase para o cliente. */
-export function apiErrorMessage(status: number, body: unknown): string {
+export function apiErrorMessage(
+  status: number,
+  body: unknown,
+  fallback = 'Não foi possível enviar o pedido. Tente de novo.',
+): string {
   const message =
     typeof body === 'object' && body !== null && 'message' in body
       ? (body as { message: unknown }).message
@@ -70,5 +74,5 @@ export function apiErrorMessage(status: number, body: unknown): string {
   if (Array.isArray(message) && message.length > 0) return String(message[0]);
   if (status === 429)
     return 'Muitas tentativas. Espere um pouco e tente de novo.';
-  return 'Não foi possível enviar o pedido. Tente de novo.';
+  return fallback;
 }

@@ -61,4 +61,20 @@ describe('StoresService', () => {
       }),
     );
   });
+
+  it('a lista de lojas diz quais são de demonstração (usado no painel)', async () => {
+    prisma.store.findMany.mockResolvedValue([store]);
+
+    const [summary] = await service.list();
+
+    expect(summary).toEqual({
+      slug: 'moda-chic',
+      name: 'Moda Chic',
+      segment: 'CLOTHING',
+      description: 'Moda feminina',
+      theme: { mode: 'light' },
+      isDemo: true,
+    });
+    expect(summary).not.toHaveProperty('whatsapp');
+  });
 });

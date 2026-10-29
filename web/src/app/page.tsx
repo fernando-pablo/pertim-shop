@@ -48,15 +48,20 @@ export default function HomePage() {
           <StoreCards />
         </Suspense>
       </main>
-      <footer className="px-4 pb-10 text-center text-sm text-muted">
-        Um projeto da{' '}
-        <a
-          href="https://lychnos-portfolio.vercel.app"
-          className="font-semibold text-muted underline"
-        >
-          Lychnos Tech
-        </a>
-        .
+      <footer className="flex flex-col items-center gap-3 px-4 pb-10 text-center text-sm text-muted">
+        <Link href="/painel" className="font-semibold text-ink underline">
+          Área do lojista
+        </Link>
+        <p>
+          Um projeto da{' '}
+          <a
+            href="https://lychnos-portfolio.vercel.app"
+            className="font-semibold text-muted underline"
+          >
+            Lychnos Tech
+          </a>
+          .
+        </p>
       </footer>
     </div>
   );

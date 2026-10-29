@@ -11,12 +11,12 @@ export class StoreSummaryDto {
   segment: Segment;
   description: string | null;
   theme: StoreTheme;
+  /** Loja de demonstração: os pedidos são simulados */
+  isDemo: boolean;
 }
 
 /** Dados completos de uma loja, usados pela vitrine. */
 export class StoreDto extends StoreSummaryDto {
   /** Número do WhatsApp que recebe os pedidos (só dígitos, com DDI) */
   whatsapp: string;
-  /** Loja de demonstração: os pedidos são simulados */
-  isDemo: boolean;
 }

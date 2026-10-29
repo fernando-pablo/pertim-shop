@@ -14,7 +14,7 @@ import type {
  */
 
 /** Endereço da API para o servidor da vitrine (no Docker: http://api:3333). */
-function apiUrl(): string {
+export function apiUrl(): string {
   return process.env.API_URL ?? 'http://localhost:3333';
 }
 

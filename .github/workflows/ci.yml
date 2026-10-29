@@ -153,6 +153,14 @@ jobs:
           curl -fsS http://localhost:3000/moda-chic | grep -q "Vestido Midi de Linho"
           echo "A vitrine da Moda Chic abriu com os produtos."
 
+      - name: Conferir o painel do lojista
+        run: |
+          curl -fsS http://localhost:3000/painel/entrar | grep -q "Área do lojista"
+          # Sem login, o painel manda para a tela de entrada.
+          destino=$(curl -s -o /dev/null -w "%{redirect_url}" http://localhost:3000/painel)
+          echo "Sem login, /painel foi para: $destino"
+          echo "$destino" | grep -q "/painel/entrar"
+
       - name: Mostrar os logs (só se algo deu errado)
         if: failure()
         run: docker compose logs api web
