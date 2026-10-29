@@ -6,7 +6,7 @@
 
 Plataforma de pedidos para pequenos comércios. Várias lojas num sistema só, cada uma com o seu link e o seu visual, e o pedido saindo pronto para o WhatsApp.
 
-> 🚧 **Em construção.** Etapa **2 de 5 concluída: a API** (catálogo, pedidos, login e painel do lojista). Etapa 3 em andamento: cache, limite de tentativas e testes automáticos já prontos.
+> 🚧 **Em construção.** Etapas **1 a 3 de 5 concluídas:** a API está pronta, com catálogo, pedidos, painel do lojista, cache, limite de tentativas, testes automáticos e teste de carga. Próximo passo: a vitrine em Next.js.
 
 ## Tecnologias
 
@@ -87,14 +87,25 @@ DATABASE_URL=postgresql://pertim:pertim@localhost:5433/pertim npm run test:int
 O [k6](https://k6.io) simula **50 clientes navegando nas três lojas ao mesmo tempo, por 30 segundos**. Cada cliente abre a loja, as categorias, a lista de produtos e um produto, e repete sem parar. O teste roda duas vezes, com o cache ligado e desligado:
 
 ```bash
-docker compose up -d --build
-docker compose run --rm --no-deps k6        # com cache
-CACHE_ENABLED=false docker compose up -d    # desliga o cache
-docker compose run --rm --no-deps k6        # sem cache
-docker compose up -d                        # liga o cache de novo
+docker compose up -d --build --wait
+docker compose run --rm --no-deps k6               # com cache
+CACHE_ENABLED=false docker compose up -d --wait    # desliga o cache
+docker compose run --rm --no-deps k6               # sem cache
+docker compose up -d --wait                        # liga o cache de novo
 ```
 
-Os números de cada rodada ficam em [`load-test/results/`](load-test/results). Resultados: em breve.
+Os números de cada rodada ficam em [`load-test/results/`](load-test/results).
+
+**Resultado:**
+
+| | Com cache | Sem cache | Diferença |
+|---|---|---|---|
+| Requisições por segundo | **688,6** | 188,1 | 3,7 vezes mais |
+| Tempo médio de resposta | **68,6 ms** | 258,1 ms | 3,8 vezes menor |
+| 95% das respostas em até | **141,3 ms** | 461,5 ms | 3,3 vezes menor |
+| Erros | 0% | 0% | |
+
+Medido em outubro de 2026 no computador do autor, com Windows e Docker. A API, o banco, o Redis e o k6 rodaram na mesma máquina. Os números mudam de um computador para outro; o que vale é a comparação entre as duas colunas.
 
 ## Endereços da API
 
@@ -210,7 +221,7 @@ pertim-shop/
 - **Dados de demonstração num lugar só.** A mesma função cria as lojas no primeiro start e restaura a loja no botão "restaurar dados", mantendo o id da loja e do lojista (quem está logado continua logado).
 - **Docker.** Qualquer pessoa clona o repositório e roda tudo com um comando. A imagem tem 3 etapas, leva só o necessário e roda sem permissão de administrador. *Seria exagero num site estático, sem banco.*
 - **CI com banco e Redis de verdade.** Teste com dados simulados não pega erro de SQL nem de transação. Por isso o GitHub Actions liga um PostgreSQL e um Redis a cada push, roda os testes de integração e ainda sobe a plataforma inteira pelo Docker Compose para conferir o `/health`.
-- **Cache da vitrine com versão por loja.** A vitrine é muito lida e pouco alterada, então as respostas ficam no Redis por 10 minutos. Cada loja tem uma "versão" do catálogo, e as respostas são guardadas junto com ela. Quando o lojista muda algo no painel, ou um pedido baixa o estoque, a loja ganha uma versão nova e a vitrine mostra a mudança na hora. Uma resposta antiga que chegue atrasada fica presa à versão velha e nunca é lida.
+- **Cache da vitrine com versão por loja.** A vitrine é muito lida e pouco alterada, então as respostas ficam no Redis por 10 minutos. Cada loja tem uma "versão" do catálogo, e as respostas são guardadas junto com ela. Quando o lojista muda algo no painel, ou um pedido baixa o estoque, a loja ganha uma versão nova e a vitrine mostra a mudança na hora. Uma resposta antiga que chegue atrasada fica presa à versão velha e nunca é lida. No [teste de carga](#teste-de-carga), o cache fez a API responder 3,7 vezes mais requisições por segundo.
 - **A invalidação fica num lugar só.** Um *interceptor* do Nest apaga o cache depois de qualquer alteração nas rotas de catálogo do painel. Rota nova já nasce apagando o cache, sem ninguém precisar lembrar. Pedidos de produtos sem controle de estoque (lanches) não apagam o cache.
 - **O que vai para o cache.** A lista completa de produtos, as categorias, cada produto e os dados da loja. Busca e filtro vão direto ao banco, para ninguém conseguir encher a memória do Redis inventando buscas. Endereço ou produto que não existe também não é guardado. O pedido consulta preço e estoque sempre no banco, nunca no cache.
 - **Limite de tentativas com contador no Redis.** Cada IP tem um contador com prazo de validade (`INCR` com `EX`). Isso protege o login contra quem tenta adivinhar senhas e os pedidos contra robôs. O contador fica no Redis, e não na memória da API, para valer igual em todas as cópias da API.
@@ -225,10 +236,10 @@ pertim-shop/
 - [x] **Etapa 2:** API
   - [x] banco de dados, lojas de demonstração, catálogo e Swagger
   - [x] pedidos, login do lojista (JWT) e painel
-- [ ] **Etapa 3:** desempenho e automação
+- [x] **Etapa 3:** desempenho e automação
   - [x] cache da vitrine e limite de tentativas com Redis
   - [x] testes automáticos no GitHub Actions
-  - [ ] resultados do teste de carga
+  - [x] teste de carga com k6
 - [ ] **Etapa 4:** vitrine em Next.js e painel do lojista
 - [ ] **Etapa 5:** publicação (Render, Neon e Vercel)
 

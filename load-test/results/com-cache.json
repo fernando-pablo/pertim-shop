@@ -1,0 +1,11 @@
+{
+  "cenario": "com-cache",
+  "data": "2026-10-29T13:29:18.098Z",
+  "clientesSimultaneos": 50,
+  "duracaoSegundos": 32,
+  "requisicoes": 21824,
+  "requisicoesPorSegundo": 688.6,
+  "tempoMedioMs": 68.6,
+  "tempoP95Ms": 141.3,
+  "erros": "0%"
+}
