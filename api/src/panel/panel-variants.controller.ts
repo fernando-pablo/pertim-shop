@@ -8,11 +8,13 @@ import {
   Post,
   Put,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { AuthMerchant } from '../auth/auth-merchant';
 import { CurrentMerchant } from '../auth/current-merchant.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { InvalidateCatalogInterceptor } from '../cache/invalidate-catalog.interceptor';
 import { PanelProductDto } from './dto/panel-product.dto';
 import {
   ReplaceAddonGroupsDto,
@@ -24,6 +26,8 @@ import { PanelVariantsService } from './panel-variants.service';
 @ApiTags('Painel: variações, estoque e adicionais')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
+// Toda alteração feita aqui apaga o cache da vitrine da loja.
+@UseInterceptors(InvalidateCatalogInterceptor)
 @Controller('panel/products/:productId')
 export class PanelVariantsController {
   constructor(private readonly variants: PanelVariantsService) {}

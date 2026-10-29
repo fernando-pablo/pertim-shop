@@ -1,5 +1,6 @@
 import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
+import { Redis } from 'ioredis';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from '../../src/app.module';
@@ -8,24 +9,33 @@ import { seedDemoStores } from '../../src/demo/seed-demo';
 import { PrismaService } from '../../src/prisma/prisma.service';
 import { REDIS_CLIENT } from '../../src/redis/redis.module';
 
-/** Sobe a API com o banco de verdade (só o Redis é simulado). */
+/** Sobe a API inteira, com banco e Redis de verdade. */
 export async function createTestApp(): Promise<INestApplication<App>> {
-  const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
-    .overrideProvider(REDIS_CLIENT)
-    .useValue({ ping: jest.fn(), quit: jest.fn(), disconnect: jest.fn() })
-    .compile();
+  const moduleRef = await Test.createTestingModule({
+    imports: [AppModule],
+  }).compile();
 
   const app = moduleRef.createNestApplication<INestApplication<App>>();
   configureApp(app);
   await app.init();
+
+  // Espera o Redis conectar antes de começar os testes.
+  const redis = app.get<Redis>(REDIS_CLIENT);
+  if (redis.status !== 'ready') {
+    await new Promise((resolve) => redis.once('ready', resolve));
+  }
   return app;
 }
 
-/** Volta as lojas de demonstração ao estado original. */
+/**
+ * Volta as lojas de demonstração ao estado original e limpa o Redis de
+ * testes (cache e contadores do limite de tentativas).
+ */
 export async function resetDemoData(app: INestApplication): Promise<void> {
   await seedDemoStores(app.get(PrismaService), {
     password: process.env.DEMO_PASSWORD ?? 'pertim-demo',
   });
+  await app.get<Redis>(REDIS_CLIENT).flushdb();
 }
 
 interface ProductSummary {

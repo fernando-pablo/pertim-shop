@@ -1,5 +1,7 @@
 import { NotFoundException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
+import { passThroughCache } from '../../test/fakes/fake-redis';
+import { CatalogCache } from '../cache/catalog-cache.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { StoresService } from './stores.service';
 
@@ -22,7 +24,11 @@ describe('StoresService', () => {
   beforeEach(async () => {
     jest.resetAllMocks();
     const moduleRef = await Test.createTestingModule({
-      providers: [StoresService, { provide: PrismaService, useValue: prisma }],
+      providers: [
+        StoresService,
+        { provide: PrismaService, useValue: prisma },
+        { provide: CatalogCache, useValue: passThroughCache },
+      ],
     }).compile();
     service = moduleRef.get(StoresService);
   });
@@ -49,8 +55,10 @@ describe('StoresService', () => {
     await expect(service.getBySlug('loja-desativada')).rejects.toBeInstanceOf(
       NotFoundException,
     );
-    expect(prisma.store.findFirst).toHaveBeenCalledWith({
-      where: { slug: 'loja-desativada', isActive: true },
-    });
+    expect(prisma.store.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { slug: 'loja-desativada', isActive: true },
+      }),
+    );
   });
 });

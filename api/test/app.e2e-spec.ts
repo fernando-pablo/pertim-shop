@@ -20,7 +20,13 @@ describe('API (e2e)', () => {
     category: { findMany: jest.fn() },
     product: { findMany: jest.fn(), findFirst: jest.fn() },
   };
-  const redis = { ping: jest.fn(), quit: jest.fn(), disconnect: jest.fn() };
+  const redis = {
+    ping: jest.fn(),
+    get: jest.fn(),
+    set: jest.fn(),
+    quit: jest.fn(),
+    disconnect: jest.fn(),
+  };
 
   beforeEach(async () => {
     jest.resetAllMocks();

@@ -1,4 +1,5 @@
 import { ConflictException, Injectable } from '@nestjs/common';
+import { CatalogCache } from '../cache/catalog-cache.service';
 import { Prisma } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { StoresService } from '../stores/stores.service';
@@ -15,51 +16,63 @@ export class OrdersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly stores: StoresService,
+    private readonly cache: CatalogCache,
   ) {}
 
   /**
    * Cria o pedido numa transação: ou tudo dá certo (estoque, número e
    * pedido), ou nada é gravado.
+   *
+   * Preços e estoque vêm sempre do banco, nunca do cache.
    */
   async create(slug: string, dto: CreateOrderDto): Promise<OrderCreatedDto> {
     const store = await this.stores.findActiveBySlug(slug);
 
-    const order = await this.prisma.$transaction(async (tx) => {
-      const products = await tx.product.findMany({
-        where: {
-          id: { in: dto.items.map((item) => item.productId) },
-          storeId: store.id,
-          isActive: true,
-        },
-        include: pricingInclude,
-      });
-
-      const priced = priceOrder(products, dto.items);
-      await reserveStock(tx, priced);
-      const number = await nextOrderNumber(tx, store.id);
-
-      return tx.order.create({
-        data: {
-          storeId: store.id,
-          number,
-          customerName: dto.customerName,
-          customerPhone: dto.customerPhone,
-          fulfillment: dto.fulfillment,
-          address: dto.fulfillment === 'DELIVERY' ? dto.address : null,
-          notes: dto.notes || null,
-          subtotalCents: priced.subtotalCents,
-          totalCents: priced.subtotalCents,
-          items: {
-            create: priced.lines.map((line, position) => ({
-              ...line,
-              position,
-              addons: line.addons as unknown as Prisma.InputJsonValue,
-            })),
+    const { order, changedStock } = await this.prisma.$transaction(
+      async (tx) => {
+        const products = await tx.product.findMany({
+          where: {
+            id: { in: dto.items.map((item) => item.productId) },
+            storeId: store.id,
+            isActive: true,
           },
-        },
-        include: orderInclude,
-      });
-    });
+          include: pricingInclude,
+        });
+
+        const priced = priceOrder(products, dto.items);
+        await reserveStock(tx, priced);
+        const number = await nextOrderNumber(tx, store.id);
+
+        const created = await tx.order.create({
+          data: {
+            storeId: store.id,
+            number,
+            customerName: dto.customerName,
+            customerPhone: dto.customerPhone,
+            fulfillment: dto.fulfillment,
+            address: dto.fulfillment === 'DELIVERY' ? dto.address : null,
+            notes: dto.notes || null,
+            subtotalCents: priced.subtotalCents,
+            totalCents: priced.subtotalCents,
+            items: {
+              create: priced.lines.map((line, position) => ({
+                ...line,
+                position,
+                addons: line.addons as unknown as Prisma.InputJsonValue,
+              })),
+            },
+          },
+          include: orderInclude,
+        });
+        return { order: created, changedStock: priced.stockNeeds.length > 0 };
+      },
+    );
+
+    // O estoque mudou: a vitrine precisa mostrar o "esgotado" na hora.
+    // Produto sem controle de estoque (como os lanches) não apaga o cache.
+    if (changedStock) {
+      await this.cache.invalidateStore(store.id);
+    }
 
     const dtoOrder = toOrderDto(order);
     return {

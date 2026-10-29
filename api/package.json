@@ -1,6 +1,6 @@
 {
   "name": "pertim-shop-api",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "API do Pertim Shop: plataforma de pedidos para pequenos comércios",
   "author": "Fernando Pablo (Lychnos Tech)",
   "private": true,

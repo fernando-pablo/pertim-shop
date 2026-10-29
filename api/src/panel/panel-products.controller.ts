@@ -9,6 +9,7 @@ import {
   Patch,
   Post,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -19,6 +20,7 @@ import {
 import type { AuthMerchant } from '../auth/auth-merchant';
 import { CurrentMerchant } from '../auth/current-merchant.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { InvalidateCatalogInterceptor } from '../cache/invalidate-catalog.interceptor';
 import { PanelProductDto } from './dto/panel-product.dto';
 import { CreateProductDto, UpdateProductDto } from './dto/product-input.dto';
 import { PanelProductsService } from './panel-products.service';
@@ -26,6 +28,8 @@ import { PanelProductsService } from './panel-products.service';
 @ApiTags('Painel: produtos')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
+// Toda alteração feita aqui apaga o cache da vitrine da loja.
+@UseInterceptors(InvalidateCatalogInterceptor)
 @Controller('panel/products')
 export class PanelProductsController {
   constructor(private readonly products: PanelProductsService) {}

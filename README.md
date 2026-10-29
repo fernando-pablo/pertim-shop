@@ -4,7 +4,7 @@
 
 Plataforma de pedidos para pequenos comércios. Várias lojas num sistema só, cada uma com o seu link e o seu visual, e o pedido saindo pronto para o WhatsApp.
 
-> 🚧 **Em construção.** Etapa **2 de 5 concluída: a API** (catálogo, pedidos, login e painel do lojista).
+> 🚧 **Em construção.** Etapa **2 de 5 concluída: a API** (catálogo, pedidos, login e painel do lojista). Etapa 3 em andamento: cache e limite de tentativas já prontos.
 
 ## Tecnologias
 
@@ -12,13 +12,13 @@ Plataforma de pedidos para pequenos comércios. Várias lojas num sistema só, c
 |---|---|
 | API | [Nest.js](https://nestjs.com) 12 com TypeScript, rodando em Node.js 24 |
 | Banco de dados | PostgreSQL 17 com [Prisma](https://www.prisma.io) 7 (ORM e migrations) |
-| Cache | Redis 7 |
+| Cache e limite de tentativas | Redis 7 (ioredis) |
 | Documentação | Swagger (OpenAPI), em `/docs` |
 | Infraestrutura | Docker e Docker Compose |
 | Login | JWT (JSON Web Token) e senhas com bcrypt |
 | Testes | Jest: unidade, ponta a ponta e integração com banco real |
 
-Em breve: cache e limite de pedidos com Redis, testes no GitHub Actions e vitrine em Next.js.
+Em breve: testes no GitHub Actions, teste de carga e vitrine em Next.js.
 
 ## Como rodar
 
@@ -65,13 +65,13 @@ npm test           # testes de unidade
 npm run test:e2e   # testes de ponta a ponta (banco e Redis simulados)
 ```
 
-Os **testes de integração** usam o PostgreSQL de verdade. Com o Docker ligado:
+Os **testes de integração** usam o PostgreSQL e o Redis de verdade. Com o Docker ligado:
 
 ```bash
 DATABASE_URL=postgresql://pertim:pertim@localhost:5433/pertim npm run test:int
 ```
 
-> Os testes de integração restauram as lojas de demonstração. Os testes precisam do Node.js 24.9 ou mais novo.
+> Os testes de integração restauram as lojas de demonstração e usam o banco 15 do Redis (a API usa o banco 0). Os testes precisam do Node.js 24.9 ou mais novo.
 
 ## Endereços da API
 
@@ -86,6 +86,8 @@ DATABASE_URL=postgresql://pertim:pertim@localhost:5433/pertim npm run test:int
 | POST | `/auth/login` | Login do lojista (e-mail e senha) |
 | POST | `/auth/demo-login` | Login com um clique nas lojas de demonstração |
 | GET | `/health` | Confere a API, o banco e o Redis |
+
+**Limite de tentativas** (por IP): login, 10 a cada 15 minutos; login de demonstração, 30 a cada 15 minutos; pedidos, 20 a cada 10 minutos em cada loja. Passou disso, a API responde `429` com o cabeçalho `Retry-After` (quantos segundos esperar).
 
 **Painel do lojista** (exigem login; a loja vem do token, nunca do endereço):
 
@@ -154,6 +156,8 @@ pertim-shop/
 │   │   ├── demo/           dados das lojas de demonstração
 │   │   ├── prisma/         conexão com o banco
 │   │   ├── redis/          conexão com o Redis
+│   │   ├── cache/          cache da vitrine no Redis
+│   │   ├── rate-limit/     limite de tentativas
 │   │   ├── health/         endpoint /health
 │   │   └── config/         validação das variáveis de ambiente
 │   ├── test/               testes de ponta a ponta e de integração
@@ -180,6 +184,11 @@ pertim-shop/
 - **Migrations versionadas.** Cada mudança no banco vira um arquivo SQL no repositório, e qualquer máquina recria o banco igual.
 - **Dados de demonstração num lugar só.** A mesma função cria as lojas no primeiro start e restaura a loja no botão "restaurar dados", mantendo o id da loja e do lojista (quem está logado continua logado).
 - **Docker.** Qualquer pessoa clona o repositório e roda tudo com um comando. A imagem tem 3 etapas, leva só o necessário e roda sem permissão de administrador. *Seria exagero num site estático, sem banco.*
+- **Cache da vitrine com versão por loja.** A vitrine é muito lida e pouco alterada, então as respostas ficam no Redis por 10 minutos. Cada loja tem uma "versão" do catálogo, e as respostas são guardadas junto com ela. Quando o lojista muda algo no painel, ou um pedido baixa o estoque, a loja ganha uma versão nova e a vitrine mostra a mudança na hora. Uma resposta antiga que chegue atrasada fica presa à versão velha e nunca é lida.
+- **A invalidação fica num lugar só.** Um *interceptor* do Nest apaga o cache depois de qualquer alteração nas rotas de catálogo do painel. Rota nova já nasce apagando o cache, sem ninguém precisar lembrar. Pedidos de produtos sem controle de estoque (lanches) não apagam o cache.
+- **O que vai para o cache.** A lista completa de produtos, as categorias, cada produto e os dados da loja. Busca e filtro vão direto ao banco, para ninguém conseguir encher a memória do Redis inventando buscas. Endereço ou produto que não existe também não é guardado. O pedido consulta preço e estoque sempre no banco, nunca no cache.
+- **Limite de tentativas com contador no Redis.** Cada IP tem um contador com prazo de validade (`INCR` com `EX`). Isso protege o login contra quem tenta adivinhar senhas e os pedidos contra robôs. O contador fica no Redis, e não na memória da API, para valer igual em todas as cópias da API.
+- **Se o Redis cair, a loja continua vendendo.** Sem Redis, a vitrine busca direto no banco e o limite de tentativas fica desligado. O `/health` avisa o problema, e o log registra no máximo um aviso por minuto. *A escolha foi priorizar a loja aberta em vez da proteção.*
 - **`/health` responde 503 quando algo cai.** A hospedagem usa esse código para saber que a API não está saudável.
 - **Nenhum arquivo passa de 300 linhas.** Uma regra automática do linter (oxlint) impede arquivos gigantes.
 - **Configuração por variáveis de ambiente.** Senhas e endereços não ficam no código. Se faltar alguma variável, a API avisa qual é e não liga.
@@ -190,7 +199,9 @@ pertim-shop/
 - [x] **Etapa 2:** API
   - [x] banco de dados, lojas de demonstração, catálogo e Swagger
   - [x] pedidos, login do lojista (JWT) e painel
-- [ ] **Etapa 3:** cache com Redis, limite de pedidos, testes no GitHub Actions e teste de carga
+- [ ] **Etapa 3:** desempenho e automação
+  - [x] cache da vitrine e limite de tentativas com Redis
+  - [ ] testes no GitHub Actions e teste de carga
 - [ ] **Etapa 4:** vitrine em Next.js e painel do lojista
 - [ ] **Etapa 5:** publicação (Render, Neon e Vercel)
 

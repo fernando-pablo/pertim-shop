@@ -13,6 +13,7 @@ import {
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import { RateLimit } from '../rate-limit/rate-limit.decorator';
 import type { AuthMerchant } from './auth-merchant';
 import { AuthService } from './auth.service';
 import { CurrentMerchant } from './current-merchant.decorator';
@@ -26,6 +27,8 @@ export class AuthController {
 
   @Post('login')
   @HttpCode(200)
+  // Contra quem tenta adivinhar senhas: 10 tentativas a cada 15 minutos.
+  @RateLimit({ name: 'login', limit: 10, windowSeconds: 15 * 60 })
   @ApiOperation({ summary: 'Entrar no painel com e-mail e senha' })
   @ApiOkResponse({ type: AuthResponseDto })
   @ApiUnauthorizedResponse({ description: 'E-mail ou senha incorretos' })
@@ -35,6 +38,7 @@ export class AuthController {
 
   @Post('demo-login')
   @HttpCode(200)
+  @RateLimit({ name: 'demo-login', limit: 30, windowSeconds: 15 * 60 })
   @ApiOperation({
     summary: 'Entrar com um clique numa loja de demonstração',
   })

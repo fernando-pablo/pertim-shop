@@ -3,6 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { CatalogCache } from '../cache/catalog-cache.service';
 import { Prisma } from '../generated/prisma/client';
 import { OrderStatus } from '../generated/prisma/enums';
 import { OrderDto } from '../orders/dto/order.dto';
@@ -14,7 +15,10 @@ import { ListOrdersQuery, PaginatedOrdersDto } from './dto/panel-order.dto';
 /** Pedidos da loja do lojista logado. Todo acesso filtra pelo storeId. */
 @Injectable()
 export class PanelOrdersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly cache: CatalogCache,
+  ) {}
 
   async list(
     storeId: string,
@@ -95,6 +99,10 @@ export class PanelOrdersService {
       });
     });
 
+    // O estoque voltou: a vitrine precisa mostrar o produto disponível.
+    if (status === 'CANCELED') {
+      await this.cache.invalidateStore(storeId);
+    }
     return toOrderDto(order);
   }
 }

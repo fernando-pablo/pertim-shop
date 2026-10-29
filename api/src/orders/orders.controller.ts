@@ -7,6 +7,7 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
+import { RateLimit } from '../rate-limit/rate-limit.decorator';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { OrderCreatedDto } from './dto/order.dto';
 import { OrdersService } from './orders.service';
@@ -18,6 +19,8 @@ export class OrdersController {
 
   @Post()
   @HttpCode(201)
+  // Contra robôs: 20 pedidos por IP a cada 10 minutos, em cada loja.
+  @RateLimit({ name: 'orders', limit: 20, windowSeconds: 10 * 60 })
   @ApiOperation({
     summary: 'Cria um pedido e devolve a mensagem pronta para o WhatsApp',
   })

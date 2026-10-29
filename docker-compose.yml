@@ -23,7 +23,7 @@ services:
       timeout: 3s
       retries: 10
 
-  # Redis: memória rápida para cache (usado a partir da Etapa 3)
+  # Redis: memória rápida para o cache da vitrine e o limite de tentativas
   redis:
     image: redis:7-alpine
     ports:
@@ -47,6 +47,8 @@ services:
       DEMO_PASSWORD: ${DEMO_PASSWORD:-pertim-demo}
       # Chave que assina o login (JWT). Em produção, use uma chave longa e secreta.
       JWT_SECRET: ${JWT_SECRET:-troque-este-segredo-em-producao}
+      # Cache da vitrine no Redis. Use "false" para desligar e comparar a velocidade.
+      CACHE_ENABLED: ${CACHE_ENABLED:-true}
     ports:
       - "3333:3333"
     depends_on:

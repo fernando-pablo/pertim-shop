@@ -5,6 +5,7 @@ import {
   HttpCode,
   Post,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
@@ -17,6 +18,7 @@ import {
 import type { AuthMerchant } from '../auth/auth-merchant';
 import { CurrentMerchant } from '../auth/current-merchant.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { InvalidateCatalogInterceptor } from '../cache/invalidate-catalog.interceptor';
 import { resetDemoStore } from '../demo/seed-demo';
 import { PrismaService } from '../prisma/prisma.service';
 import { StoreDto } from '../stores/dto/store.dto';
@@ -26,6 +28,8 @@ import { ResetDemoResultDto } from './dto/reset-demo.dto';
 @ApiTags('Painel: loja')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
+// Toda alteração feita aqui apaga o cache da vitrine da loja.
+@UseInterceptors(InvalidateCatalogInterceptor)
 @Controller('panel')
 export class PanelStoreController {
   constructor(
