@@ -2,12 +2,26 @@ import Link from 'next/link';
 import { signOut } from '@/app/painel/actions';
 import type { PanelSession } from '@/lib/types';
 
-/** Topo do painel: marca, loja logada, link para a vitrine e "Sair". */
-export function PanelHeader({ session }: { session: PanelSession }) {
+export type PanelSection = 'pedidos' | 'produtos' | 'categorias';
+
+const SECTIONS: { id: PanelSection; label: string; href: string }[] = [
+  { id: 'pedidos', label: 'Pedidos', href: '/painel' },
+  { id: 'produtos', label: 'Produtos', href: '/painel/produtos' },
+  { id: 'categorias', label: 'Categorias', href: '/painel/categorias' },
+];
+
+/** Topo do painel: loja logada, link para a vitrine, "Sair" e o menu. */
+export function PanelHeader({
+  session,
+  current,
+}: {
+  session: PanelSession;
+  current: PanelSection;
+}) {
   const { store } = session;
   return (
     <header className="border-b border-line bg-surface">
-      <div className="mx-auto flex max-w-3xl items-center justify-between gap-3 px-4 py-3">
+      <div className="mx-auto flex max-w-3xl items-center justify-between gap-3 px-4 pt-3">
         <div className="min-w-0">
           <p className="text-xs font-bold tracking-widest text-accent-ink uppercase">
             Painel Pertim Shop
@@ -38,6 +52,28 @@ export function PanelHeader({ session }: { session: PanelSession }) {
           </form>
         </div>
       </div>
+      <nav
+        aria-label="Menu do painel"
+        className="mx-auto flex max-w-3xl gap-1 overflow-x-auto px-2"
+      >
+        {SECTIONS.map((section) => {
+          const active = section.id === current;
+          return (
+            <Link
+              key={section.id}
+              href={section.href}
+              aria-current={active ? 'page' : undefined}
+              className={`shrink-0 border-b-3 px-3 py-3 text-sm font-bold no-underline ${
+                active
+                  ? 'border-primary text-ink'
+                  : 'border-transparent text-muted'
+              }`}
+            >
+              {section.label}
+            </Link>
+          );
+        })}
+      </nav>
     </header>
   );
 }

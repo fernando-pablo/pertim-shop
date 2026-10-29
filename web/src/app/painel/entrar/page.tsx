@@ -4,6 +4,7 @@ import { Suspense } from 'react';
 import { LoginForms } from '@/components/panel/login-forms';
 import { PanelSkeleton } from '@/components/panel/panel-skeleton';
 import { getStores, publicApiUrl } from '@/lib/api';
+import { isUuid } from '@/lib/panel-api';
 
 export const metadata: Metadata = { title: 'Entrar' };
 
@@ -34,12 +35,26 @@ export default function SignInPage(props: PageProps<'/painel/entrar'>) {
 }
 
 async function SignInContent({ searchParams }: PageProps<'/painel/entrar'>) {
-  const { sessao } = await searchParams;
+  const { sessao, loja, pedido } = await searchParams;
   const stores = await getStores();
+  const demoStores = stores.filter((store) => store.isDemo);
+  // Vindo da simulação do pedido: a loja do pedido aparece primeiro, e
+  // depois de entrar o painel abre direto nesse pedido.
+  const highlight = demoStores.find((store) => store.slug === loja);
+  const next =
+    highlight && typeof pedido === 'string' && isUuid(pedido)
+      ? `/painel/pedidos/${pedido}`
+      : undefined;
   return (
     <LoginForms
       apiUrl={publicApiUrl()}
-      demoStores={stores.filter((store) => store.isDemo)}
+      demoStores={
+        highlight
+          ? [highlight, ...demoStores.filter((store) => store !== highlight)]
+          : demoStores
+      }
+      highlight={highlight?.slug}
+      next={next}
       expired={sessao === 'expirou'}
     />
   );

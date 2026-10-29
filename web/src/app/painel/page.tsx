@@ -40,7 +40,7 @@ async function OrdersContent({ searchParams }: PageProps<'/painel'>) {
 
   return (
     <>
-      <PanelHeader session={session} />
+      <PanelHeader session={session} current="pedidos" />
       <main className="mx-auto flex max-w-3xl flex-col gap-4 px-4 py-6">
         <div className="flex items-center justify-between gap-3">
           <h1 className="text-3xl font-extrabold">Pedidos</h1>

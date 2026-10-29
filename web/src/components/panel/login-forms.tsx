@@ -33,10 +33,16 @@ const inputClass =
 export function LoginForms({
   apiUrl,
   demoStores,
+  highlight,
+  next,
   expired,
 }: {
   apiUrl: string;
   demoStores: StoreSummary[];
+  /** Loja em que o visitante acabou de pedir (vem do link da simulação) */
+  highlight?: string;
+  /** Pedido para abrir depois de entrar */
+  next?: string;
   expired: boolean;
 }) {
   const [email, setEmail] = useState('');
@@ -82,7 +88,10 @@ export function LoginForms({
     const { accessToken } = data as AuthResponse;
     startSaving(async () => {
       // Deu certo: o servidor guarda o cookie e abre o painel.
-      const result = await startSession(accessToken);
+      const result = await startSession(
+        accessToken,
+        key === highlight ? next : undefined,
+      );
       if (result) setError({ where, text: result.error });
       setWaiting(null);
     });
@@ -112,7 +121,9 @@ export function LoginForms({
               Conhecer o painel
             </h2>
             <p className="text-sm text-muted">
-              Entre numa loja de demonstração com um clique.
+              {highlight
+                ? 'Você acabou de fazer um pedido. Entre como lojista para ver o pedido chegando do outro lado.'
+                : 'Entre numa loja de demonstração com um clique.'}
             </p>
           </div>
           <ul className="flex flex-col gap-3">
@@ -129,7 +140,9 @@ export function LoginForms({
                         store.slug,
                       )
                     }
-                    className="flex w-full items-center gap-4 border border-line p-4 text-left text-ink disabled:opacity-60"
+                    className={`flex w-full items-center gap-4 border border-line p-4 text-left text-ink disabled:opacity-60 ${
+                      store.slug === highlight ? 'ring-3 ring-primary' : ''
+                    }`}
                   >
                     <StoreLogo store={store} size={44} square />
                     <span className="flex flex-1 flex-col gap-1">

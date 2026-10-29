@@ -35,7 +35,7 @@ async function sessionToken(): Promise<string> {
 }
 
 /** 401 = login vencido ou inválido: volta para a tela de entrada. */
-async function panelRequest<T>(
+export async function panelRequest<T>(
   path: string,
   init: { method?: string; body?: unknown } = {},
 ): Promise<T> {

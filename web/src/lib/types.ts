@@ -153,3 +153,46 @@ export interface PanelSession {
 export interface AuthResponse extends PanelSession {
   accessToken: string;
 }
+
+/** Opção do produto no painel (tamanho, cor, peso...), com estoque real. */
+export interface PanelVariant {
+  id: string;
+  name: string;
+  attributes: Record<string, string>;
+  /** null = usa o preço do produto */
+  priceCents: number | null;
+  /** null = não controla estoque */
+  stock: number | null;
+  isActive: boolean;
+  position: number;
+}
+
+export interface PanelAddonGroup {
+  id: string;
+  name: string;
+  minSelect: number;
+  maxSelect: number;
+  addons: { id: string; name: string; priceCents: number; isActive: boolean }[];
+}
+
+export interface PanelProduct {
+  id: string;
+  name: string;
+  description: string | null;
+  priceCents: number;
+  imageUrl: string | null;
+  isActive: boolean;
+  isFeatured: boolean;
+  position: number;
+  category: { id: string; name: string } | null;
+  variants: PanelVariant[];
+  addonGroups: PanelAddonGroup[];
+}
+
+export interface PanelCategory {
+  id: string;
+  name: string;
+  position: number;
+  /** Produtos na categoria, ativos ou não */
+  productCount: number;
+}

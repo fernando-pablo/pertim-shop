@@ -57,6 +57,13 @@ export function OrderSent({
               </p>
             </div>
           </div>
+          {/* Para quem visita o portfólio ver o outro lado: o painel. */}
+          <Link
+            href={`/painel/entrar?loja=${store.slug}&pedido=${order.id}`}
+            className="flex h-12 items-center justify-center rounded-store bg-primary font-bold text-on-primary no-underline"
+          >
+            Ver este pedido no painel do lojista
+          </Link>
         </section>
       ) : (
         <section className="flex flex-col gap-3">

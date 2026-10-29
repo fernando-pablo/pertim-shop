@@ -26,7 +26,10 @@ type ActionResult = { error: string } | undefined;
  * tentativas contar o IP de cada pessoa. Aqui o token é conferido de novo
  * na API antes de virar cookie.
  */
-export async function startSession(token: unknown): Promise<ActionResult> {
+export async function startSession(
+  token: unknown,
+  next?: unknown,
+): Promise<ActionResult> {
   const failed = { error: 'Não foi possível entrar. Tente de novo.' };
   if (typeof token !== 'string' || token.length > 2000) return failed;
   const expiresAt = tokenExpiresAt(token);
@@ -47,7 +50,17 @@ export async function startSession(token: unknown): Promise<ActionResult> {
     path: SESSION_PATH,
     expires: new Date(expiresAt),
   });
-  redirect('/painel');
+  redirect(safeNext(next));
+}
+
+/**
+ * Depois de entrar, abre o pedido que veio no link (vindo da simulação do
+ * pedido na loja de demonstração). Só aceita endereços do próprio painel.
+ */
+function safeNext(next: unknown): string {
+  const path = typeof next === 'string' ? next : '';
+  const orderPage = /^\/painel\/pedidos\/([0-9a-f-]{36})$/i.exec(path);
+  return orderPage && isUuid(orderPage[1]) ? path : '/painel';
 }
 
 export async function signOut(): Promise<void> {

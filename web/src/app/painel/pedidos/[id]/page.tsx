@@ -37,14 +37,14 @@ async function OrderContent({ params }: PageProps<'/painel/pedidos/[id]'>) {
 
   return (
     <>
-      <PanelHeader session={session} />
+      <PanelHeader session={session} current="pedidos" />
       <main className="mx-auto flex max-w-3xl flex-col gap-5 px-4 py-6">
         <div className="flex flex-col gap-2">
           <Link
             href="/painel"
             className="flex w-fit items-center gap-1 text-sm font-semibold text-ink no-underline"
           >
-            <BackIcon size={18} /> Pedidos
+            <BackIcon size={18} /> Todos os pedidos
           </Link>
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="text-3xl font-extrabold">Pedido #{order.number}</h1>
