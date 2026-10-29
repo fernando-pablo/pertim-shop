@@ -36,8 +36,9 @@ export const bichoBao: DemoStore = {
     fonts: { heading: 'Baloo 2', body: 'Nunito' },
     radius: 22,
     logoUrl: null,
-    coverUrl: null,
+    coverUrl: '/demo/bicho-bao/capa.webp',
   },
+  photos: true,
   merchant: {
     name: 'Lojista Bicho Bão',
     email: 'lojista@bicho-bao.pertim.example',

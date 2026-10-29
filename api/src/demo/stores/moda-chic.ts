@@ -27,8 +27,9 @@ export const modaChic: DemoStore = {
     fonts: { heading: 'Cormorant Garamond', body: 'Inter' },
     radius: 2,
     logoUrl: null,
-    coverUrl: null,
+    coverUrl: '/demo/moda-chic/capa.webp',
   },
+  photos: true,
   merchant: {
     name: 'Lojista Moda Chic',
     email: 'lojista@moda-chic.pertim.example',
@@ -38,7 +39,7 @@ export const modaChic: DemoStore = {
     {
       name: 'Vestido Midi de Linho',
       description:
-        'Vestido midi em linho com botões frontais e cinto do mesmo tecido. Fresco e elegante para o dia a dia.',
+        'Vestido midi em linho, sem mangas e com caimento solto. Fresco e elegante para o dia a dia.',
       priceCents: 18990,
       category: 'Vestidos',
       featured: true,
@@ -86,12 +87,12 @@ export const modaChic: DemoStore = {
     },
     {
       name: 'Body Canelado',
-      description: 'Body canelado de alcinha, base perfeita para composições.',
+      description: 'Body canelado sem mangas, base perfeita para composições.',
       priceCents: 6990,
       category: 'Blusas e camisas',
       variants: sizesAndColors(
         ['P', 'M', 'G'],
-        ['Preto', 'Caramelo'],
+        ['Branco', 'Preto'],
         [7, 4, 6, 5, 2, 3],
       ),
     },
@@ -104,7 +105,7 @@ export const modaChic: DemoStore = {
       featured: true,
       variants: sizesAndColors(
         ['36', '38', '40', '42'],
-        ['Preta', 'Bege'],
+        ['Bege', 'Preta'],
         [3, 2, 5, 4, 4, 1, 2, 0],
       ),
     },
@@ -127,7 +128,7 @@ export const modaChic: DemoStore = {
       category: 'Calças e saias',
       variants: sizesAndColors(
         ['P', 'M', 'G'],
-        ['Verde-oliva', 'Champanhe'],
+        ['Champanhe', 'Verde-oliva'],
         [3, 4, 2, 5, 1, 2],
       ),
     },
@@ -136,7 +137,7 @@ export const modaChic: DemoStore = {
       description: 'Bolsa de couro com alça regulável e fecho dourado.',
       priceCents: 21990,
       category: 'Acessórios',
-      variants: variantsOf('cor', ['Caramelo', 'Preta'], [3, 5]),
+      variants: variantsOf('cor', ['Preta', 'Caramelo'], [5, 3]),
     },
     {
       name: 'Cinto com Fivela Dourada',

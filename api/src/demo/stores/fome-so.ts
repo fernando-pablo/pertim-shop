@@ -69,8 +69,9 @@ export const fomeSo: DemoStore = {
     fonts: { heading: 'Bebas Neue', body: 'Manrope' },
     radius: 14,
     logoUrl: null,
-    coverUrl: null,
+    coverUrl: '/demo/fome-so/capa.webp',
   },
+  photos: true,
   merchant: {
     name: 'Lojista Fome-Sô',
     email: 'lojista@fome-so.pertim.example',

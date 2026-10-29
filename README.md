@@ -50,6 +50,8 @@ Para desligar, use `Ctrl + C` ou rode `docker compose down`.
 
 Todas usam o mesmo código. O que muda é o tema (cores, fontes, cantos), que fica salvo no banco. Nas lojas de demonstração o pedido é simulado: em vez de abrir o WhatsApp, a vitrine mostra a mensagem que seria enviada.
 
+As fotos das lojas de demonstração são do [Unsplash](https://unsplash.com) e seguem a [licença do Unsplash](https://unsplash.com/license), que permite o uso gratuito. A lista com o link de cada foto está em [`web/public/demo/CREDITOS.md`](web/public/demo/CREDITOS.md).
+
 **Para testar o painel no Swagger:**
 
 1. Em `POST /auth/demo-login`, envie `{ "slug": "fome-so" }` e copie o `accessToken`.
@@ -266,7 +268,8 @@ pertim-shop/
 - [ ] **Etapa 4:** parte visual
   - [x] vitrine: lojas, produto, carrinho e pedido pelo WhatsApp
   - [ ] painel do lojista
-  - [ ] acabamento: fotos, "experimentar outro estilo", QR Code e PWA
+  - [x] fotos dos produtos e página inicial nova
+  - [ ] acabamento: "experimentar outro estilo", QR Code e PWA
 - [ ] **Etapa 5:** publicação (Render, Neon e Vercel)
 
 ## Autor

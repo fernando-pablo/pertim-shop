@@ -24,15 +24,21 @@ export function StoreTheme({
   );
 }
 
-/** Logo da loja; sem logo, monta um com as iniciais nas cores da loja. */
+/**
+ * Logo da loja; sem logo, monta um com as iniciais nas cores da loja.
+ * `square` deixa os cantos retos (cartões da página inicial).
+ */
 export function StoreLogo({
   store,
   size = 40,
+  square = false,
 }: {
   store: StoreSummary;
   size?: number;
+  square?: boolean;
 }) {
   const style = { width: size, height: size };
+  const corners = square ? '' : 'rounded-store';
   if (store.theme.logoUrl) {
     return (
       <Image
@@ -40,7 +46,7 @@ export function StoreLogo({
         alt=""
         width={size}
         height={size}
-        className="rounded-store object-cover"
+        className={`object-cover ${corners}`}
       />
     );
   }
@@ -48,7 +54,7 @@ export function StoreLogo({
     <span
       aria-hidden="true"
       style={{ ...style, fontSize: size * 0.42 }}
-      className="flex shrink-0 items-center justify-center rounded-store bg-primary font-heading font-semibold tracking-wide text-on-primary"
+      className={`flex shrink-0 items-center justify-center bg-primary font-heading font-semibold tracking-wide text-on-primary ${corners}`}
     >
       {initials(store.name)}
     </span>
