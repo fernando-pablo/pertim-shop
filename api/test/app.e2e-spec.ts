@@ -67,6 +67,7 @@ describe('API (e2e)', () => {
       api: 'ok',
       database: 'ok',
       redis: 'ok',
+      cache: 'on',
     });
   });
 

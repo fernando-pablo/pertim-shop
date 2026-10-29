@@ -25,6 +25,7 @@ describe('HealthController', () => {
       api: 'ok',
       database: 'ok',
       redis: 'ok',
+      cache: 'on',
     };
     healthService.check.mockResolvedValue(report);
 
@@ -37,6 +38,7 @@ describe('HealthController', () => {
       api: 'ok',
       database: 'error',
       redis: 'ok',
+      cache: 'on',
     });
 
     await expect(controller.check()).rejects.toBeInstanceOf(

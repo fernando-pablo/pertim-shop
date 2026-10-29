@@ -1,5 +1,6 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Redis } from 'ioredis';
+import { CatalogCache } from '../cache/catalog-cache.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { REDIS_CLIENT } from '../redis/redis.module';
 import { CheckStatus, HealthReport } from './dto/health-report.dto';
@@ -15,6 +16,7 @@ export class HealthService {
   constructor(
     private readonly prisma: PrismaService,
     @Inject(REDIS_CLIENT) private readonly redis: Redis,
+    private readonly cache: CatalogCache,
   ) {}
 
   async check(): Promise<HealthReport> {
@@ -29,6 +31,7 @@ export class HealthService {
       api: 'ok',
       database,
       redis,
+      cache: this.cache.isEnabled ? 'on' : 'off',
     };
   }
 

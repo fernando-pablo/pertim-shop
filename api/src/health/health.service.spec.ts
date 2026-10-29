@@ -1,4 +1,5 @@
 import { Test } from '@nestjs/testing';
+import { CatalogCache } from '../cache/catalog-cache.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { REDIS_CLIENT } from '../redis/redis.module';
 import { HealthService } from './health.service';
@@ -20,6 +21,7 @@ describe('HealthService', () => {
         HealthService,
         { provide: PrismaService, useValue: prisma },
         { provide: REDIS_CLIENT, useValue: redis },
+        { provide: CatalogCache, useValue: { isEnabled: true } },
       ],
     }).compile();
 
@@ -35,6 +37,7 @@ describe('HealthService', () => {
       api: 'ok',
       database: 'ok',
       redis: 'ok',
+      cache: 'on',
     });
   });
 
@@ -47,6 +50,7 @@ describe('HealthService', () => {
       api: 'ok',
       database: 'error',
       redis: 'ok',
+      cache: 'on',
     });
   });
 
@@ -59,6 +63,7 @@ describe('HealthService', () => {
       api: 'ok',
       database: 'ok',
       redis: 'error',
+      cache: 'on',
     });
   });
 });

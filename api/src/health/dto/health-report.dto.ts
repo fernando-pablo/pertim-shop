@@ -14,4 +14,7 @@ export class HealthReport {
   database: CheckStatus;
   @ApiProperty(statusProperty)
   redis: CheckStatus;
+  /** Cache da vitrine ligado (on) ou desligado (off, CACHE_ENABLED=false) */
+  @ApiProperty({ enum: ['on', 'off'] })
+  cache: 'on' | 'off';
 }

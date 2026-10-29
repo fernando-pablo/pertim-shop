@@ -37,6 +37,11 @@ export class CatalogCache {
     this.enabled = config.get<string>('CACHE_ENABLED') !== 'false';
   }
 
+  /** O cache está ligado? (aparece no /health) */
+  get isEnabled(): boolean {
+    return this.enabled;
+  }
+
   /** Lista de lojas da plataforma. */
   storeList<T>(load: Loader<T>): Promise<T> {
     return this.remember(cacheKeys.storeList, load);

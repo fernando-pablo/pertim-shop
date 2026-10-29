@@ -1,10 +1,12 @@
 # Pertim Shop
 
+[![CI](https://github.com/fernando-pablo/pertim-shop/actions/workflows/ci.yml/badge.svg)](https://github.com/fernando-pablo/pertim-shop/actions/workflows/ci.yml)
+
 **Tudo pertim d'ocê.**
 
 Plataforma de pedidos para pequenos comércios. Várias lojas num sistema só, cada uma com o seu link e o seu visual, e o pedido saindo pronto para o WhatsApp.
 
-> 🚧 **Em construção.** Etapa **2 de 5 concluída: a API** (catálogo, pedidos, login e painel do lojista). Etapa 3 em andamento: cache e limite de tentativas já prontos.
+> 🚧 **Em construção.** Etapa **2 de 5 concluída: a API** (catálogo, pedidos, login e painel do lojista). Etapa 3 em andamento: cache, limite de tentativas e testes automáticos já prontos.
 
 ## Tecnologias
 
@@ -73,6 +75,27 @@ DATABASE_URL=postgresql://pertim:pertim@localhost:5433/pertim npm run test:int
 
 > Os testes de integração restauram as lojas de demonstração e usam o banco 15 do Redis (a API usa o banco 0). Os testes precisam do Node.js 24.9 ou mais novo.
 
+**No GitHub, tudo roda sozinho a cada push** ([GitHub Actions](.github/workflows/ci.yml)):
+
+- formatação, lint, testes de unidade e de ponta a ponta;
+- migrations e testes de integração com PostgreSQL e Redis de verdade;
+- build da API;
+- montagem da imagem Docker, com a plataforma inteira ligada e o `/health` conferido.
+
+### Teste de carga
+
+O [k6](https://k6.io) simula **50 clientes navegando nas três lojas ao mesmo tempo, por 30 segundos**. Cada cliente abre a loja, as categorias, a lista de produtos e um produto, e repete sem parar. O teste roda duas vezes, com o cache ligado e desligado:
+
+```bash
+docker compose up -d --build
+docker compose run --rm --no-deps k6        # com cache
+CACHE_ENABLED=false docker compose up -d    # desliga o cache
+docker compose run --rm --no-deps k6        # sem cache
+docker compose up -d                        # liga o cache de novo
+```
+
+Os números de cada rodada ficam em [`load-test/results/`](load-test/results). Resultados: em breve.
+
 ## Endereços da API
 
 | Método | Endereço | O que faz |
@@ -85,7 +108,7 @@ DATABASE_URL=postgresql://pertim:pertim@localhost:5433/pertim npm run test:int
 | POST | `/stores/:slug/orders` | Cria o pedido e devolve a mensagem pronta do WhatsApp |
 | POST | `/auth/login` | Login do lojista (e-mail e senha) |
 | POST | `/auth/demo-login` | Login com um clique nas lojas de demonstração |
-| GET | `/health` | Confere a API, o banco e o Redis |
+| GET | `/health` | Confere a API, o banco e o Redis, e mostra se o cache está ligado |
 
 **Limite de tentativas** (por IP): login, 10 a cada 15 minutos; login de demonstração, 30 a cada 15 minutos; pedidos, 20 a cada 10 minutos em cada loja. Passou disso, a API responde `429` com o cabeçalho `Retry-After` (quantos segundos esperar).
 
@@ -162,6 +185,8 @@ pertim-shop/
 │   │   └── config/         validação das variáveis de ambiente
 │   ├── test/               testes de ponta a ponta e de integração
 │   └── Dockerfile          receita da imagem da API
+├── load-test/              teste de carga (k6) e resultados
+├── .github/workflows/      verificação automática (GitHub Actions)
 ├── docker-compose.yml      sobe API, PostgreSQL e Redis juntos
 └── .env.example            modelo das configurações
 ```
@@ -184,6 +209,7 @@ pertim-shop/
 - **Migrations versionadas.** Cada mudança no banco vira um arquivo SQL no repositório, e qualquer máquina recria o banco igual.
 - **Dados de demonstração num lugar só.** A mesma função cria as lojas no primeiro start e restaura a loja no botão "restaurar dados", mantendo o id da loja e do lojista (quem está logado continua logado).
 - **Docker.** Qualquer pessoa clona o repositório e roda tudo com um comando. A imagem tem 3 etapas, leva só o necessário e roda sem permissão de administrador. *Seria exagero num site estático, sem banco.*
+- **CI com banco e Redis de verdade.** Teste com dados simulados não pega erro de SQL nem de transação. Por isso o GitHub Actions liga um PostgreSQL e um Redis a cada push, roda os testes de integração e ainda sobe a plataforma inteira pelo Docker Compose para conferir o `/health`.
 - **Cache da vitrine com versão por loja.** A vitrine é muito lida e pouco alterada, então as respostas ficam no Redis por 10 minutos. Cada loja tem uma "versão" do catálogo, e as respostas são guardadas junto com ela. Quando o lojista muda algo no painel, ou um pedido baixa o estoque, a loja ganha uma versão nova e a vitrine mostra a mudança na hora. Uma resposta antiga que chegue atrasada fica presa à versão velha e nunca é lida.
 - **A invalidação fica num lugar só.** Um *interceptor* do Nest apaga o cache depois de qualquer alteração nas rotas de catálogo do painel. Rota nova já nasce apagando o cache, sem ninguém precisar lembrar. Pedidos de produtos sem controle de estoque (lanches) não apagam o cache.
 - **O que vai para o cache.** A lista completa de produtos, as categorias, cada produto e os dados da loja. Busca e filtro vão direto ao banco, para ninguém conseguir encher a memória do Redis inventando buscas. Endereço ou produto que não existe também não é guardado. O pedido consulta preço e estoque sempre no banco, nunca no cache.
@@ -201,7 +227,8 @@ pertim-shop/
   - [x] pedidos, login do lojista (JWT) e painel
 - [ ] **Etapa 3:** desempenho e automação
   - [x] cache da vitrine e limite de tentativas com Redis
-  - [ ] testes no GitHub Actions e teste de carga
+  - [x] testes automáticos no GitHub Actions
+  - [ ] resultados do teste de carga
 - [ ] **Etapa 4:** vitrine em Next.js e painel do lojista
 - [ ] **Etapa 5:** publicação (Render, Neon e Vercel)
 
