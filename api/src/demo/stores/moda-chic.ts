@@ -20,11 +20,14 @@ export const modaChic: DemoStore = {
       primary: '#1A1A1A',
       primaryText: '#FAF7F2',
       accent: '#B8925A',
+      // Dourado mais escuro para textos pequenos (contraste de 4,7 com o creme).
+      accentText: '#8A6A3B',
+      soft: '#EFE7DA',
     },
     fonts: { heading: 'Cormorant Garamond', body: 'Inter' },
     radius: 2,
-    logoUrl: '/demo/moda-chic/logo.svg',
-    coverUrl: '/demo/moda-chic/capa.webp',
+    logoUrl: null,
+    coverUrl: null,
   },
   merchant: {
     name: 'Lojista Moda Chic',

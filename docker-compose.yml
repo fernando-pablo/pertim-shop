@@ -1,5 +1,5 @@
 # Sobe o Pertim Shop inteiro com um comando:  docker compose up --build
-# São 3 "caixas" (contêineres) que conversam entre si: api, db e redis.
+# São 4 "caixas" (contêineres) que conversam entre si: web, api, db e redis.
 
 name: pertim-shop
 
@@ -63,6 +63,26 @@ services:
       interval: 10s
       timeout: 3s
       start_period: 40s
+      retries: 5
+
+  # Vitrine em Next.js, montada a partir do web/Dockerfile
+  web:
+    build: ./web
+    environment:
+      # O servidor da vitrine fala com a API pela rede do Docker...
+      API_URL: http://api:3333
+      # ...e o navegador do cliente manda o pedido pelo endereço do seu PC.
+      PUBLIC_API_URL: ${PUBLIC_API_URL:-http://localhost:3333}
+    ports:
+      - "3000:3000"
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO /dev/null http://127.0.0.1:3000/ || exit 1"]
+      interval: 10s
+      timeout: 3s
+      start_period: 20s
       retries: 5
 
   # Teste de carga com k6. Só roda quando pedido:

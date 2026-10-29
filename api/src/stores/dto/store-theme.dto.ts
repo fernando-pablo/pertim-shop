@@ -17,8 +17,15 @@ export class StoreThemeColors {
   primary: string;
   /** Texto em cima da cor principal */
   primaryText: string;
-  /** Cor de destaque (preços, selos) */
+  /** Cor de destaque (selos, detalhes) */
   accent: string;
+  /**
+   * Destaque usado em textos pequenos. Precisa de contraste com o fundo.
+   * Sem ela, a vitrine usa a cor de destaque normal.
+   */
+  accentText?: string;
+  /** Fundo suave dos desenhos e fotos. Sem ela, a vitrine mistura a cor principal */
+  soft?: string;
 }
 
 export class StoreThemeFonts {
@@ -35,8 +42,8 @@ export class StoreTheme {
   fonts: StoreThemeFonts;
   /** Arredondamento dos cantos, em pixels */
   radius: number;
-  /** Caminho do logo na vitrine */
+  /** Caminho do logo na vitrine. Sem logo, a vitrine monta um com as iniciais */
   logoUrl?: string | null;
-  /** Caminho da imagem de capa na vitrine */
+  /** Caminho da imagem de capa na vitrine. Sem capa, mostra um desenho */
   coverUrl?: string | null;
 }

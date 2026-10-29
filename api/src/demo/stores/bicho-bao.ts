@@ -12,7 +12,7 @@ function packs(options: [string, number, number][]) {
   }));
 }
 
-/** Pet shop: visual claro e alegre (verde e amarelo). Proposta inicial. */
+/** Pet shop: visual claro e alegre (azul e coral), escolhido nas prévias. */
 export const bichoBao: DemoStore = {
   slug: 'bicho-bao',
   name: 'Bicho Bão Pet Shop',
@@ -23,18 +23,20 @@ export const bichoBao: DemoStore = {
   theme: {
     mode: 'light',
     colors: {
-      background: '#F4FBF8',
+      background: '#F3F7FF',
       surface: '#FFFFFF',
-      text: '#17312B',
-      muted: '#5D7A72',
-      primary: '#1FA37A',
+      text: '#1B2540',
+      muted: '#56617D',
+      primary: '#2F5BD3',
       primaryText: '#FFFFFF',
-      accent: '#FFB547',
+      accent: '#FF7A59',
+      // Coral mais escuro para textos pequenos (o coral claro some no fundo).
+      accentText: '#B9412A',
     },
-    fonts: { heading: 'Fredoka', body: 'Nunito' },
-    radius: 18,
-    logoUrl: '/demo/bicho-bao/logo.svg',
-    coverUrl: '/demo/bicho-bao/capa.webp',
+    fonts: { heading: 'Baloo 2', body: 'Nunito' },
+    radius: 22,
+    logoUrl: null,
+    coverUrl: null,
   },
   merchant: {
     name: 'Lojista Bicho Bão',

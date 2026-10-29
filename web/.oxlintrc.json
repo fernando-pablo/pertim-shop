@@ -1,0 +1,13 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "unicorn", "oxc", "react", "nextjs", "jsx-a11y"],
+  "rules": {
+    "typescript/no-floating-promises": "error",
+    "react/react-in-jsx-scope": "off",
+    "max-lines": ["error", { "max": 300, "skipBlankLines": true, "skipComments": true }]
+  },
+  "env": {
+    "browser": true,
+    "node": true
+  }
+}

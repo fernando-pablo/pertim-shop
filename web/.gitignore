@@ -1,0 +1,16 @@
+# Dependências e arquivos gerados pelo Next.js
+/node_modules
+/.next/
+/out/
+/coverage
+*.tsbuildinfo
+next-env.d.ts
+
+# Variáveis de ambiente (o modelo .env.example vai para o GitHub)
+.env
+.env.*
+!.env.example
+
+.DS_Store
+*.pem
+npm-debug.log*

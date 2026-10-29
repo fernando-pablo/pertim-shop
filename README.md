@@ -6,21 +6,20 @@
 
 Plataforma de pedidos para pequenos comércios. Várias lojas num sistema só, cada uma com o seu link e o seu visual, e o pedido saindo pronto para o WhatsApp.
 
-> 🚧 **Em construção.** Etapas **1 a 3 de 5 concluídas:** a API está pronta, com catálogo, pedidos, painel do lojista, cache, limite de tentativas, testes automáticos e teste de carga. Próximo passo: a vitrine em Next.js.
+> 🚧 **Em construção.** Etapas **1 a 3 de 5 concluídas:** a API está pronta, com catálogo, pedidos, painel do lojista, cache, limite de tentativas, testes automáticos e teste de carga. **Etapa 4 em andamento:** a vitrine em Next.js já funciona (loja, produto, carrinho e pedido); faltam o painel do lojista e o acabamento.
 
 ## Tecnologias
 
 | Parte | Tecnologia |
 |---|---|
+| Vitrine | [Next.js](https://nextjs.org) 16 (App Router, React 19) com TypeScript e Tailwind CSS 4 |
 | API | [Nest.js](https://nestjs.com) 12 com TypeScript, rodando em Node.js 24 |
 | Banco de dados | PostgreSQL 17 com [Prisma](https://www.prisma.io) 7 (ORM e migrations) |
 | Cache e limite de tentativas | Redis 7 (ioredis) |
 | Documentação | Swagger (OpenAPI), em `/docs` |
 | Infraestrutura | Docker e Docker Compose |
 | Login | JWT (JSON Web Token) e senhas com bcrypt |
-| Testes | Jest: unidade, ponta a ponta e integração com banco real |
-
-Em breve: testes no GitHub Actions, teste de carga e vitrine em Next.js.
+| Testes | Jest (API), Vitest (vitrine), teste de carga com k6 e GitHub Actions |
 
 ## Como rodar
 
@@ -32,9 +31,10 @@ Na pasta do projeto:
 docker compose up --build
 ```
 
-O comando sobe a **API**, o **PostgreSQL** e o **Redis**, cria as tabelas (migrations) e, se o banco estiver vazio, cria três lojas de demonstração. Depois abra no navegador:
+O comando sobe a **vitrine**, a **API**, o **PostgreSQL** e o **Redis**, cria as tabelas (migrations) e, se o banco estiver vazio, cria três lojas de demonstração. Depois abra no navegador:
 
-- http://localhost:3333/docs: documentação interativa (Swagger)
+- http://localhost:3000: a vitrine, com as lojas
+- http://localhost:3333/docs: documentação interativa da API (Swagger)
 - http://localhost:3333/stores: lojas da plataforma
 - http://localhost:3333/health: saúde da API
 
@@ -42,13 +42,13 @@ Para desligar, use `Ctrl + C` ou rode `docker compose down`.
 
 ### Lojas de demonstração
 
-| Loja | Segmento | Endereço |
+| Loja | Segmento | Vitrine |
 |---|---|---|
-| Moda Chic | Roupas e acessórios | `/stores/moda-chic` |
-| Fome-Sô | Lanchonete | `/stores/fome-so` |
-| Bicho Bão Pet Shop | Pet shop | `/stores/bicho-bao` |
+| Moda Chic | Roupas e acessórios | http://localhost:3000/moda-chic |
+| Fome-Sô | Lanchonete | http://localhost:3000/fome-so |
+| Bicho Bão Pet Shop | Pet shop | http://localhost:3000/bicho-bao |
 
-Todas usam a mesma API. O que muda é o tema (cores, fontes, logo), que fica salvo no banco.
+Todas usam o mesmo código. O que muda é o tema (cores, fontes, cantos), que fica salvo no banco. Nas lojas de demonstração o pedido é simulado: em vez de abrir o WhatsApp, a vitrine mostra a mensagem que seria enviada.
 
 **Para testar o painel no Swagger:**
 
@@ -75,12 +75,21 @@ DATABASE_URL=postgresql://pertim:pertim@localhost:5433/pertim npm run test:int
 
 > Os testes de integração restauram as lojas de demonstração e usam o banco 15 do Redis (a API usa o banco 0). Os testes precisam do Node.js 24.9 ou mais novo.
 
+Os testes da **vitrine** cobrem o carrinho, as escolhas do produto (tamanho, cor, adicionais) e o pedido:
+
+```bash
+cd web
+npm install
+npm test
+```
+
 **No GitHub, tudo roda sozinho a cada push** ([GitHub Actions](.github/workflows/ci.yml)):
 
 - formatação, lint, testes de unidade e de ponta a ponta;
 - migrations e testes de integração com PostgreSQL e Redis de verdade;
 - build da API;
-- montagem da imagem Docker, com a plataforma inteira ligada e o `/health` conferido.
+- na vitrine: formatação, lint, tipos, testes e build;
+- montagem das imagens Docker, com a plataforma inteira ligada, o `/health` conferido e a vitrine de uma loja aberta de verdade.
 
 ### Teste de carga
 
@@ -179,6 +188,11 @@ O desenho completo fica em [`api/prisma/schema.prisma`](api/prisma/schema.prisma
 
 ```
 pertim-shop/
+├── web/                    vitrine em Next.js
+│   ├── src/app/            páginas: início, loja, produto e carrinho
+│   ├── src/components/     partes da tela (tema da loja, produto, carrinho...)
+│   ├── src/lib/            regras do carrinho, das opções e do pedido (com testes)
+│   └── Dockerfile          receita da imagem da vitrine
 ├── api/                    API em Nest.js
 │   ├── prisma/             desenho do banco (schema) e migrations
 │   ├── src/
@@ -198,7 +212,7 @@ pertim-shop/
 │   └── Dockerfile          receita da imagem da API
 ├── load-test/              teste de carga (k6) e resultados
 ├── .github/workflows/      verificação automática (GitHub Actions)
-├── docker-compose.yml      sobe API, PostgreSQL e Redis juntos
+├── docker-compose.yml      sobe vitrine, API, PostgreSQL e Redis juntos
 └── .env.example            modelo das configurações
 ```
 
@@ -220,6 +234,15 @@ pertim-shop/
 - **Migrations versionadas.** Cada mudança no banco vira um arquivo SQL no repositório, e qualquer máquina recria o banco igual.
 - **Dados de demonstração num lugar só.** A mesma função cria as lojas no primeiro start e restaura a loja no botão "restaurar dados", mantendo o id da loja e do lojista (quem está logado continua logado).
 - **Docker.** Qualquer pessoa clona o repositório e roda tudo com um comando. A imagem tem 3 etapas, leva só o necessário e roda sem permissão de administrador. *Seria exagero num site estático, sem banco.*
+- **Vitrine com Next.js e streaming.** As páginas são montadas no servidor (Server Components), que busca os dados na API. Um "esqueleto" da página chega na hora, e o conteúdo da loja entra assim que a API responde (Suspense). O Google lê a loja inteira, o que ajuda o comércio a ser encontrado.
+- **Um código, vários visuais.** O tema que vem da API vira variáveis CSS, e o Tailwind usa essas variáveis (`bg-primary`, `font-heading`...). As três lojas usam as mesmas telas. O tema fica num layout que não sai da tela ao navegar, então a cor da loja não "pisca" entre uma página e outra.
+- **A tela muda com o tipo de loja.** A lanchonete mostra o cardápio em lista, como os apps de comida; as outras lojas usam grade de fotos. Tamanho, cor e peso viram botões, e os adicionais respeitam o mínimo e o máximo de cada grupo.
+- **Carrinho no navegador.** Fica salvo no `localStorage`, um por loja: continua lá se o cliente fechar a página, sem precisar de login.
+- **O preço do carrinho é só uma prévia.** A vitrine manda para a API apenas o que o cliente escolheu; o total de verdade a API calcula com os preços do banco.
+- **O pedido vai direto do navegador para a API.** Assim o limite de tentativas enxerga o IP de cada cliente, e não o do servidor da vitrine.
+- **Demonstração honesta.** Nas lojas de demonstração, a vitrine avisa no topo que os pedidos são simulados e mostra a mensagem do WhatsApp numa simulação, sem enviar nada.
+- **Acessível e legível.** Botões, rótulos e campos de verdade (dá para usar pelo teclado), e contraste conferido: cores que não passavam (texto branco no verde, dourado em texto pequeno) ganharam versões mais escuras no tema.
+- **Fontes guardadas no projeto.** As fontes vêm do Fontsource (npm), sem depender do Google na hora de montar ou abrir o site.
 - **CI com banco e Redis de verdade.** Teste com dados simulados não pega erro de SQL nem de transação. Por isso o GitHub Actions liga um PostgreSQL e um Redis a cada push, roda os testes de integração e ainda sobe a plataforma inteira pelo Docker Compose para conferir o `/health`.
 - **Cache da vitrine com versão por loja.** A vitrine é muito lida e pouco alterada, então as respostas ficam no Redis por 10 minutos. Cada loja tem uma "versão" do catálogo, e as respostas são guardadas junto com ela. Quando o lojista muda algo no painel, ou um pedido baixa o estoque, a loja ganha uma versão nova e a vitrine mostra a mudança na hora. Uma resposta antiga que chegue atrasada fica presa à versão velha e nunca é lida. No [teste de carga](#teste-de-carga), o cache fez a API responder 3,7 vezes mais requisições por segundo.
 - **A invalidação fica num lugar só.** Um *interceptor* do Nest apaga o cache depois de qualquer alteração nas rotas de catálogo do painel. Rota nova já nasce apagando o cache, sem ninguém precisar lembrar. Pedidos de produtos sem controle de estoque (lanches) não apagam o cache.
@@ -240,7 +263,10 @@ pertim-shop/
   - [x] cache da vitrine e limite de tentativas com Redis
   - [x] testes automáticos no GitHub Actions
   - [x] teste de carga com k6
-- [ ] **Etapa 4:** vitrine em Next.js e painel do lojista
+- [ ] **Etapa 4:** parte visual
+  - [x] vitrine: lojas, produto, carrinho e pedido pelo WhatsApp
+  - [ ] painel do lojista
+  - [ ] acabamento: fotos, "experimentar outro estilo", QR Code e PWA
 - [ ] **Etapa 5:** publicação (Render, Neon e Vercel)
 
 ## Autor

@@ -1,0 +1,45 @@
+{
+  "name": "pertim-shop-web",
+  "version": "0.1.0",
+  "description": "Vitrine do Pertim Shop: a loja de cada comércio, com o pedido indo para o WhatsApp",
+  "author": "Fernando Pablo (Lychnos Tech)",
+  "private": true,
+  "license": "UNLICENSED",
+  "scripts": {
+    "dev": "next dev --port 3000",
+    "build": "next build",
+    "start": "next start --port 3000",
+    "lint": "oxlint --type-aware src/",
+    "typecheck": "next typegen && tsc --noEmit",
+    "format": "prettier --write \"src/**/*.{ts,tsx,css}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,css}\"",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@fontsource-variable/baloo-2": "^5.3.0",
+    "@fontsource-variable/cormorant-garamond": "^5.3.0",
+    "@fontsource-variable/inter": "^5.3.0",
+    "@fontsource-variable/manrope": "^5.3.0",
+    "@fontsource-variable/nunito": "^5.3.0",
+    "@fontsource/bebas-neue": "^5.3.0",
+    "next": "16.4.3",
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/turbopack": "^4.3.3",
+    "@types/node": "^24.0.0",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "oxlint": "^1.90.0",
+    "oxlint-tsgolint": "^7.0.2005",
+    "prettier": "^3.9.10",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^6.0.2",
+    "vitest": "^5.0.5"
+  },
+  "engines": {
+    "node": ">=24.9"
+  }
+}

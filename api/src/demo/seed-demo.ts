@@ -126,7 +126,8 @@ function toProductData(
     name: product.name,
     description: product.description,
     priceCents: product.priceCents,
-    imageUrl: imagePath(demo.slug, product.name),
+    // Sem foto, a vitrine mostra um desenho no lugar.
+    imageUrl: demo.photos ? imagePath(demo.slug, product.name) : null,
     isFeatured: product.featured ?? false,
     position,
     variants: {

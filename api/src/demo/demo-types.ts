@@ -37,6 +37,8 @@ export interface DemoStore {
   /** Número fictício: na demonstração nada é enviado de verdade */
   whatsapp: string;
   theme: StoreTheme;
+  /** As fotos dos produtos já estão na vitrine? (entram na Etapa 4C) */
+  photos?: boolean;
   merchant: { name: string; email: string };
   categories: string[];
   products: DemoProduct[];

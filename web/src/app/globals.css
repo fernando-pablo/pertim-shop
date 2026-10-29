@@ -1,0 +1,58 @@
+@import 'tailwindcss';
+
+/*
+ * Cores e fontes da loja vêm do tema (API) como variáveis CSS, aplicadas
+ * pelo componente StoreTheme. Aqui elas viram classes do Tailwind:
+ * bg-bg, bg-surface, text-ink, text-muted, bg-primary, text-on-primary,
+ * text-accent-ink, bg-soft, border-line, rounded-store, font-heading...
+ * Sem tema (página inicial), valem as cores da marca Pertim Shop.
+ */
+:root {
+  --store-bg: #faf6ef;
+  --store-surface: #ffffff;
+  --store-text: #1f1a14;
+  --store-muted: #6b6258;
+  --store-primary: #b4540f;
+  --store-on-primary: #ffffff;
+  --store-accent: #f2b705;
+  --store-accent-text: #8a4a0e;
+  --store-on-accent: #1a1a1a;
+  --store-radius: 14px;
+  --store-font-heading: 'Manrope Variable', system-ui, sans-serif;
+  --store-font-body: 'Manrope Variable', system-ui, sans-serif;
+}
+
+@theme inline {
+  --color-bg: var(--store-bg);
+  --color-surface: var(--store-surface);
+  --color-ink: var(--store-text);
+  --color-muted: var(--store-muted);
+  --color-primary: var(--store-primary);
+  --color-on-primary: var(--store-on-primary);
+  --color-accent: var(--store-accent);
+  --color-accent-ink: var(--store-accent-text);
+  --color-on-accent: var(--store-on-accent);
+  /* Fundo dos desenhos: a cor "soft" do tema ou a principal bem clarinha. */
+  --color-soft: var(
+    --store-soft,
+    color-mix(in srgb, var(--store-primary) 12%, var(--store-surface))
+  );
+  --color-line: color-mix(in srgb, var(--store-text) 14%, transparent);
+  --radius-store: var(--store-radius);
+  --font-heading: var(--store-font-heading);
+  --font-body: var(--store-font-body);
+}
+
+body {
+  margin: 0;
+  background: var(--store-bg);
+  color: var(--store-text);
+  font-family: var(--store-font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Foco visível para quem navega pelo teclado. */
+:focus-visible {
+  outline: 3px solid var(--store-primary);
+  outline-offset: 2px;
+}
