@@ -147,6 +147,12 @@ jobs:
           echo "Lojas criadas: $stores"
           test "$stores" -eq 3
 
+      - name: Conferir a busca (extensões unaccent e pg_trgm no banco)
+        run: |
+          curl -fsS "http://localhost:3333/stores/bicho-bao/search?q=racao%20gato" | grep -q "Gatos Castrados"
+          curl -fsS "http://localhost:3333/stores/bicho-bao/search?q=rasao" | grep -q '"match":"similar"'
+          echo "A busca sem acento e com erro de digitação funcionou."
+
       - name: Conferir a vitrine
         run: |
           curl -fsS http://localhost:3000/ > /dev/null
@@ -156,6 +162,7 @@ jobs:
       - name: Conferir o painel do lojista
         run: |
           curl -fsS http://localhost:3000/painel/entrar | grep -q "Área do lojista"
+          curl -fsS http://localhost:3000/sobre | grep -q "Como funciona"
           # Sem login, o painel manda para a tela de entrada.
           destino=$(curl -s -o /dev/null -w "%{redirect_url}" http://localhost:3000/painel)
           echo "Sem login, /painel foi para: $destino"

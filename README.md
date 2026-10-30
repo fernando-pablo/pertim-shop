@@ -6,7 +6,7 @@
 
 Plataforma de pedidos para pequenos comércios. Várias lojas num sistema só, cada uma com o seu link e o seu visual, e o pedido saindo pronto para o WhatsApp.
 
-> 🚧 **Em construção.** Etapas **1 a 3 de 5 concluídas:** a API está pronta, com catálogo, pedidos, painel do lojista, cache, limite de tentativas, testes automáticos e teste de carga. **Etapa 4 em andamento:** a vitrine em Next.js já funciona (loja, produto, carrinho e pedido), e o painel do lojista já recebe os pedidos e cuida dos produtos e das categorias; falta o acabamento.
+> 🚧 **Em construção.** Etapas **1 a 4 de 5 concluídas:** a API (catálogo, pedidos, cache, limite de tentativas, testes automáticos e teste de carga), a vitrine em Next.js (lojas, busca, carrinho e pedido) e o painel do lojista (pedidos, produtos e categorias). **Falta a Etapa 5:** colocar no ar.
 
 ## Tecnologias
 
@@ -35,6 +35,7 @@ O comando sobe a **vitrine**, a **API**, o **PostgreSQL** e o **Redis**, cria as
 
 - http://localhost:3000: a vitrine, com as lojas
 - http://localhost:3000/painel: o painel do lojista (dá para entrar numa loja de demonstração com um clique)
+- http://localhost:3000/sobre: a plataforma explicada em linguagem simples
 - http://localhost:3333/docs: documentação interativa da API (Swagger)
 - http://localhost:3333/stores: lojas da plataforma
 - http://localhost:3333/health: saúde da API
@@ -133,6 +134,7 @@ Medido em outubro de 2026 no computador do autor, com Windows e Docker. A API, o
 | GET | `/stores/:slug` | Dados da loja e tema (visual) |
 | GET | `/stores/:slug/categories` | Categorias, com a quantidade de produtos |
 | GET | `/stores/:slug/products` | Produtos, com filtro `?category=` e busca `?search=` |
+| GET | `/stores/:slug/search?q=` | Busca da vitrine: sem acento, várias palavras e nomes parecidos (erro de digitação) |
 | GET | `/stores/:slug/products/:id` | Produto completo: variações e adicionais |
 | POST | `/stores/:slug/orders` | Cria o pedido e devolve a mensagem pronta do WhatsApp |
 | POST | `/auth/login` | Login do lojista (e-mail e senha) |
@@ -257,8 +259,10 @@ pertim-shop/
 - **Server Actions no painel.** Os formulários chamam funções que rodam no servidor da vitrine. Cada uma confere de novo tudo o que veio do navegador (formato, tamanho, regras de mínimo e máximo dos adicionais), usando as mesmas funções da tela, e só então chama a API, que confere mais uma vez. O Next.js ainda confere a origem de cada chamada (proteção contra CSRF).
 - **Mudou no painel, mudou na loja.** Toda alteração de produto ou categoria passa pelo interceptor que apaga o cache da vitrine na API. Testado: pausar um produto tira ele da loja na mesma hora.
 - **Demonstração que se limpa sozinha.** Todo visitante usa as mesmas lojas de demonstração, então os pedidos de teste se acumulam (com o nome e o telefone que a pessoa digitou). A cada hora, a API confere se já passou um dia desde a última limpeza e, se passou, volta a loja ao original. Quem decide é um único comando do Redis, `SET chave NX EX 86400`: ele só grava se a chave não existe e a chave some sozinha depois de 24 horas. Com várias cópias da API rodando, só uma consegue gravar, e a loja é restaurada uma vez só. Lojas de verdade nunca são tocadas. O carrinho das lojas de demonstração também avisa para usar dados de teste.
+- **O número do WhatsApp fica fora do código.** O botão "Quero um sistema assim" passa por `/contato`, que lê o número da variável `CONTACT_WHATSAPP` a cada clique e redireciona para o WhatsApp com a mensagem pronta. O repositório é público, e o número nem aparece no HTML da página. Sem a variável, o botão leva ao portfólio.
 - **Os dois lados na demonstração.** Cada loja de demonstração tem o botão "Área do lojista" na faixa do topo: um clique e o visitante está no painel daquela loja, sem escolher entre outras. Numa loja de verdade, o cliente não vê esse botão; o lojista entra por `/painel` com e-mail e senha.
-- **Busca do painel sem acento.** "racao" acha "Ração", porque a busca tira os acentos antes de comparar.
+- **Busca que perdoa.** A busca da vitrine roda no PostgreSQL com duas extensões que já vêm com ele: `unaccent` (ignora acentos) e `pg_trgm` (mede a semelhança entre textos). "racao", "RAÇÃO" e "Ração" dão o mesmo resultado; "ra" acha tudo que tem "ra"; "racao gato" acha "Ração Premium Gatos Castrados" (cada palavra, em qualquer ordem, no nome, na descrição ou na categoria); e, se nada aparecer, "rasao" mostra "Resultados parecidos". Os nomes que combinam vêm primeiro. O texto digitado vai como parâmetro da consulta, nunca colado no SQL. *Com milhares de produtos por loja, o próximo passo seria um índice de trigramas.*
+- **Busca do painel sem acento.** A lista de produtos do painel segue a mesma ideia, filtrando na tela: sem acento e com várias palavras.
 - **Horário no fuso de Brasília.** O servidor roda em UTC; o painel mostra os horários fixando o fuso `America/Sao_Paulo`.
 - **Demonstração honesta.** Nas lojas de demonstração, a vitrine avisa no topo que os pedidos são simulados e mostra a mensagem do WhatsApp numa simulação, sem enviar nada.
 - **Acessível e legível.** Botões, rótulos e campos de verdade (dá para usar pelo teclado), e contraste conferido: cores que não passavam (texto branco no verde, dourado em texto pequeno) ganharam versões mais escuras no tema.
@@ -283,12 +287,12 @@ pertim-shop/
   - [x] cache da vitrine e limite de tentativas com Redis
   - [x] testes automáticos no GitHub Actions
   - [x] teste de carga com k6
-- [ ] **Etapa 4:** parte visual
+- [x] **Etapa 4:** parte visual
   - [x] vitrine: lojas, produto, carrinho e pedido pelo WhatsApp
   - [x] painel do lojista: entrada e pedidos
   - [x] painel do lojista: produtos, categorias e restaurar a demonstração
   - [x] fotos dos produtos e página inicial nova
-  - [ ] acabamento: "experimentar outro estilo", QR Code e PWA
+  - [x] acabamento: busca que perdoa, página "Sobre" e botão "Quero um sistema assim"
 - [ ] **Etapa 5:** publicação (Render, Neon e Vercel)
 
 ## Autor

@@ -75,6 +75,8 @@ services:
       API_URL: http://api:3333
       # ...e o navegador do cliente manda o pedido pelo endereço do seu PC.
       PUBLIC_API_URL: ${PUBLIC_API_URL:-http://localhost:3333}
+      # WhatsApp do botão "Quero um sistema assim" (vazio = vai para o portfólio)
+      CONTACT_WHATSAPP: ${CONTACT_WHATSAPP:-}
     ports:
       - "3000:3000"
     depends_on:

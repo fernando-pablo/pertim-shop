@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { formatOrderTime } from './format-time';
+import { matchesSearch, searchWords } from './search-text';
 import { isOrderStatus, nextSteps } from './order-status';
 import { isTokenExpired, tokenExpiresAt } from './session-token';
 
@@ -100,5 +101,21 @@ describe('horário do pedido', () => {
 
   it('dias anteriores mostram a data', () => {
     expect(formatOrderTime('2026-10-20T21:15:00Z', now)).toBe('20/10, 18:15');
+  });
+});
+
+describe('busca da lista do painel', () => {
+  it('ignora acentos, maiúsculas e a ordem das palavras', () => {
+    expect(matchesSearch('Ração Premium Gatos Castrados', 'GATO racao')).toBe(
+      true,
+    );
+    expect(matchesSearch('Ração Filhotes Rações', 'gato')).toBe(false);
+    expect(matchesSearch('Burger no Pão de Queijo Lanches', 'pao queijo')).toBe(
+      true,
+    );
+  });
+
+  it('separa as palavras e tira sinais', () => {
+    expect(searchWords('  Pão-de-Queijo! ')).toEqual(['pao', 'de', 'queijo']);
   });
 });

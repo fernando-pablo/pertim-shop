@@ -1,6 +1,7 @@
 'use client';
 
 import { resetDemo } from '@/app/painel/actions';
+import { ContactLink } from '../contact-link';
 import { ConfirmButton } from './feedback';
 
 /**
@@ -13,7 +14,10 @@ export function DemoBar() {
       <div className="mx-auto flex max-w-3xl flex-col gap-2 px-4 py-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="text-sm font-semibold">
-            Demonstração: pode mexer à vontade.
+            Demonstração: pode mexer à vontade.{' '}
+            <ContactLink className="font-semibold underline">
+              Quero um sistema assim
+            </ContactLink>
           </p>
           <ConfirmButton
             label="Restaurar dados da demonstração"

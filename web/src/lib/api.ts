@@ -3,6 +3,7 @@ import type {
   Category,
   ProductDetail,
   ProductSummary,
+  SearchResult,
   Store,
   StoreSummary,
 } from './types';
@@ -51,12 +52,25 @@ export async function getCategories(slug: string): Promise<Category[]> {
   return (await get<Category[]>(`${store(slug)}/categories`)) ?? [];
 }
 
-export async function getProducts(
+export async function getProducts(slug: string): Promise<ProductSummary[]> {
+  return (await get<ProductSummary[]>(`${store(slug)}/products`)) ?? [];
+}
+
+/**
+ * Busca da vitrine: sem acento, várias palavras e, se nada aparecer, nomes
+ * parecidos (match "similar"). Quem faz a busca é a API.
+ */
+export async function searchProducts(
   slug: string,
-  search?: string,
-): Promise<ProductSummary[]> {
-  const query = search ? `?search=${encodeURIComponent(search)}` : '';
-  return (await get<ProductSummary[]>(`${store(slug)}/products${query}`)) ?? [];
+  text: string,
+): Promise<SearchResult> {
+  const query = new URLSearchParams({ q: text });
+  return (
+    (await get<SearchResult>(`${store(slug)}/search?${query}`)) ?? {
+      match: 'none',
+      products: [],
+    }
+  );
 }
 
 /** Ids que não são UUID nem chegam na API (ela responderia 400). */

@@ -6,6 +6,7 @@ import { useState, useTransition } from 'react';
 import { toggleProduct } from '@/app/painel/produtos/actions';
 import type { ActionResult } from '@/lib/action-result';
 import { priceSummary, type StockTone, stockSummary } from '@/lib/product-form';
+import { matchesSearch } from '@/lib/search-text';
 import type { PanelCategory, PanelProduct } from '@/lib/types';
 import { SearchIcon } from '../icons';
 import { ResultText } from './feedback';
@@ -16,10 +17,6 @@ const TONES: Record<StockTone, string> = {
   out: 'text-red-800',
   none: 'text-muted',
 };
-
-/** "Ração" e "racao" viram o mesmo texto na busca. */
-const simplify = (text: string) =>
-  text.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
 /**
  * Lista de produtos do painel, com busca e atalhos para pausar e
@@ -33,16 +30,19 @@ export function ProductAdminList({
   categories: PanelCategory[];
 }) {
   const [search, setSearch] = useState('');
-  const term = simplify(search.trim());
+  // Cada palavra pode estar no nome ou na categoria, sem ligar para acento.
+  const term = search.trim();
   const found = term
-    ? products.filter((product) => simplify(product.name).includes(term))
+    ? products.filter((product) =>
+        matchesSearch(`${product.name} ${product.category?.name ?? ''}`, term),
+      )
     : products;
 
   const sections = term
     ? [
         {
           id: 'busca',
-          title: `Resultados para “${search.trim()}”`,
+          title: `Resultados para “${term}”`,
           items: found,
         },
       ]

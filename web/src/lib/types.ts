@@ -58,6 +58,13 @@ export interface ProductSummary {
   available: boolean;
 }
 
+/** Resposta da busca da vitrine. */
+export interface SearchResult {
+  /** exact: achou as palavras; similar: nomes parecidos; none: nada */
+  match: 'exact' | 'similar' | 'none';
+  products: ProductSummary[];
+}
+
 export interface Variant {
   id: string;
   name: string;

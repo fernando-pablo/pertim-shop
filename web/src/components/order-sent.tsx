@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect } from 'react';
 import { formatBRL } from '@/lib/money';
 import type { OrderCreated } from '@/lib/types';
+import { ContactLink } from './contact-link';
 import { DemoPanelButton } from './demo-panel-button';
 import { ChatIcon, CheckIcon } from './icons';
 
@@ -69,6 +70,9 @@ export function OrderSent({
           >
             Ver este pedido no painel do lojista
           </DemoPanelButton>
+          <ContactLink className="text-center text-sm font-semibold text-ink underline">
+            Gostou? Quero um sistema assim para a minha loja
+          </ContactLink>
         </section>
       ) : (
         <section className="flex flex-col gap-3">

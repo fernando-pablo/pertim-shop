@@ -5,6 +5,7 @@ import { CatalogCache } from '../cache/catalog-cache.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { StoresService } from '../stores/stores.service';
 import { CatalogService } from './catalog.service';
+import { ProductSearchService } from './product-search.service';
 
 describe('CatalogService', () => {
   const prisma = {
@@ -13,6 +14,18 @@ describe('CatalogService', () => {
   };
   const stores = { findActiveBySlug: jest.fn() };
   const cache = { ...passThroughCache, catalog: jest.fn() };
+  const searcher = { findExact: jest.fn(), search: jest.fn() };
+  /** Linha do banco com o mínimo que o mapper usa. */
+  const row = (id: string, categoryId: string) => ({
+    id,
+    name: id,
+    description: null,
+    imageUrl: null,
+    isFeatured: false,
+    priceCents: 1000,
+    category: { id: categoryId, name: categoryId },
+    variants: [],
+  });
   let service: CatalogService;
 
   beforeEach(async () => {
@@ -31,6 +44,7 @@ describe('CatalogService', () => {
         { provide: PrismaService, useValue: prisma },
         { provide: StoresService, useValue: stores },
         { provide: CatalogCache, useValue: cache },
+        { provide: ProductSearchService, useValue: searcher },
       ],
     }).compile();
 
@@ -57,27 +71,38 @@ describe('CatalogService', () => {
     );
 
     cache.catalog.mockClear();
-    await service.listProducts('moda-chic', { search: 'linho' });
+    searcher.findExact.mockResolvedValue([]);
+    await service.listProducts('moda-chic', { search: 'Linho' });
     await service.listProducts('moda-chic', { category: 'cat-1' });
     expect(cache.catalog).not.toHaveBeenCalled();
-    expect(prisma.product.findMany).toHaveBeenCalledTimes(3);
+    expect(searcher.findExact).toHaveBeenCalledWith('loja-1', ['linho']);
   });
 
-  it('aplica o filtro de categoria e a busca por texto', async () => {
-    prisma.product.findMany.mockResolvedValue([]);
+  it('a busca mantém a ordem de importância e respeita a categoria', async () => {
+    searcher.findExact.mockResolvedValue(['p3', 'p1', 'p2']);
+    prisma.product.findMany.mockResolvedValue([
+      row('p1', 'cat-1'),
+      row('p2', 'cat-2'),
+      row('p3', 'cat-1'),
+    ]);
 
-    await service.listProducts('moda-chic', {
+    const found = await service.listProducts('moda-chic', {
       category: 'cat-1',
-      search: 'linho',
+      search: 'vestido',
     });
 
-    const { where } = prisma.product.findMany.mock.calls[0][0];
-    expect(where.categoryId).toBe('cat-1');
-    expect(where.OR).toHaveLength(2);
-    expect(where.OR[0].name).toEqual({
-      contains: 'linho',
-      mode: 'insensitive',
-    });
+    expect(found.map((product) => product.id)).toEqual(['p3', 'p1']);
+  });
+
+  it('a rota de busca devolve o tipo de resultado (exato ou parecido)', async () => {
+    searcher.search.mockResolvedValue({ match: 'similar', ids: ['p1'] });
+    prisma.product.findMany.mockResolvedValue([row('p1', 'cat-1')]);
+
+    const result = await service.search('moda-chic', 'vestdo');
+
+    expect(searcher.search).toHaveBeenCalledWith('loja-1', 'vestdo');
+    expect(result.match).toBe('similar');
+    expect(result.products.map((product) => product.id)).toEqual(['p1']);
   });
 
   it('procura o produto sempre dentro da loja (isolamento entre lojas)', async () => {

@@ -1,6 +1,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { Suspense } from 'react';
+import { ContactLink } from '@/components/contact-link';
 import { StoreLogo, StoreTheme } from '@/components/store-theme';
 import { getStores } from '@/lib/api';
 import { SEGMENT_LABELS } from '@/lib/theme';
@@ -26,7 +27,18 @@ export default function HomePage() {
           aria-hidden="true"
           className="absolute inset-0 -z-10 bg-linear-to-b from-black/40 via-black/25 to-black/60"
         />
-        <div className="mx-auto flex min-h-[25rem] max-w-3xl flex-col justify-end gap-4 px-4 pt-20 pb-12 sm:min-h-[30rem] sm:pb-16">
+        <nav
+          aria-label="Páginas"
+          className="mx-auto flex max-w-3xl justify-end px-4 pt-4"
+        >
+          <Link
+            href="/sobre"
+            className="px-1 py-2 text-sm font-semibold text-white underline drop-shadow"
+          >
+            Sobre
+          </Link>
+        </nav>
+        <div className="mx-auto flex min-h-[22rem] max-w-3xl flex-col justify-end gap-4 px-4 pt-6 pb-12 sm:min-h-[27rem] sm:pb-16">
           <h1 className="text-6xl leading-none font-extrabold tracking-tight text-white drop-shadow-lg sm:text-8xl">
             Pertim <span className="text-[#F2B705]">Shop</span>
           </h1>
@@ -47,11 +59,32 @@ export default function HomePage() {
         <Suspense fallback={<p className="text-muted">Carregando as lojas…</p>}>
           <StoreCards />
         </Suspense>
+
+        <section
+          aria-labelledby="contato"
+          className="mt-8 flex flex-col items-start gap-3 bg-[#1F1A14] p-6 text-[#FAF6EF]"
+        >
+          <h2 id="contato" className="text-2xl font-bold">
+            Quer um sistema assim para o seu comércio?
+          </h2>
+          <p className="text-[#FAF6EF]/80">
+            O seu próprio link de pedidos, com o visual da sua loja e o pedido
+            chegando pronto no WhatsApp.
+          </p>
+          <ContactLink className="bg-[#F2B705] px-5 py-3 font-bold text-[#1F1A14] no-underline">
+            Quero um sistema assim
+          </ContactLink>
+        </section>
       </main>
       <footer className="flex flex-col items-center gap-3 px-4 pb-10 text-center text-sm text-muted">
-        <Link href="/painel" className="font-semibold text-ink underline">
-          Área do lojista
-        </Link>
+        <nav aria-label="Rodapé" className="flex gap-5">
+          <Link href="/sobre" className="font-semibold text-ink underline">
+            Sobre
+          </Link>
+          <Link href="/painel" className="font-semibold text-ink underline">
+            Área do lojista
+          </Link>
+        </nav>
         <p>
           Um projeto da{' '}
           <a

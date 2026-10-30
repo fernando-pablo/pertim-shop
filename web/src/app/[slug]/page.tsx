@@ -8,7 +8,12 @@ import { FeaturedStrip, ProductList } from '@/components/product-list';
 import { StoreSkeleton } from '@/components/skeletons';
 import { StoreFooter, StoreHeader } from '@/components/store-header';
 import { Photo } from '@/components/store-theme';
-import { getCategories, getProducts, getStore } from '@/lib/api';
+import {
+  getCategories,
+  getProducts,
+  getStore,
+  searchProducts,
+} from '@/lib/api';
 import type { Category, ProductSummary } from '@/lib/types';
 
 export async function generateMetadata({
@@ -36,10 +41,11 @@ async function StoreContent({ params, searchParams }: PageProps<'/[slug]'>) {
   const { busca } = await searchParams;
   const search = typeof busca === 'string' ? busca.trim().slice(0, 60) : '';
 
-  const [store, categories, products] = await Promise.all([
+  const [store, categories, products, results] = await Promise.all([
     getStore(slug),
     getCategories(slug),
-    getProducts(slug, search || undefined),
+    getProducts(slug),
+    search ? searchProducts(slug, search) : null,
   ]);
   if (!store) notFound();
 
@@ -84,14 +90,16 @@ async function StoreContent({ params, searchParams }: PageProps<'/[slug]'>) {
           />
         </form>
 
-        {search ? (
+        {search && results ? (
           <section aria-labelledby="resultados" className="flex flex-col gap-3">
             <div className="flex items-baseline justify-between gap-3">
               <h2
                 id="resultados"
                 className="font-heading text-2xl font-semibold"
               >
-                Resultados para “{search}”
+                {results.match === 'similar'
+                  ? 'Resultados parecidos'
+                  : `Resultados para “${search}”`}
               </h2>
               <Link
                 href={`/${slug}`}
@@ -100,14 +108,22 @@ async function StoreContent({ params, searchParams }: PageProps<'/[slug]'>) {
                 Limpar busca
               </Link>
             </div>
-            {products.length > 0 ? (
+            {results.match === 'similar' && (
+              <p className="-mt-2 text-muted">
+                Não achamos “{search}”. Talvez você tenha procurado:
+              </p>
+            )}
+            {results.products.length > 0 ? (
               <ProductList
                 slug={slug}
                 segment={store.segment}
-                products={products}
+                products={results.products}
               />
             ) : (
-              <p className="text-muted">Nenhum produto encontrado.</p>
+              <p className="text-muted">
+                Nenhum produto encontrado. Confira a escrita ou veja as
+                categorias da loja.
+              </p>
             )}
           </section>
         ) : (

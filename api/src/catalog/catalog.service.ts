@@ -1,6 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { CatalogCache } from '../cache/catalog-cache.service';
-import { Prisma } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { StoresService } from '../stores/stores.service';
 import {
@@ -12,6 +11,9 @@ import {
 import { CategoryDto } from './dto/category.dto';
 import { ListProductsQuery } from './dto/list-products.query';
 import { ProductDetailDto, ProductSummaryDto } from './dto/product.dto';
+import { SearchResultDto } from './dto/search.dto';
+import { ProductSearchService } from './product-search.service';
+import { searchWords } from './search-words';
 
 /**
  * Catálogo público de uma loja: categorias e produtos.
@@ -24,6 +26,7 @@ export class CatalogService {
     private readonly prisma: PrismaService,
     private readonly stores: StoresService,
     private readonly cache: CatalogCache,
+    private readonly searcher: ProductSearchService,
   ) {}
 
   async listCategories(slug: string): Promise<CategoryDto[]> {
@@ -84,28 +87,53 @@ export class CatalogService {
     });
   }
 
+  /**
+   * Busca da vitrine: sem acento, várias palavras e, se nada aparecer,
+   * nomes parecidos (erro de digitação). Vai sempre direto ao banco.
+   */
+  async search(slug: string, text: string): Promise<SearchResultDto> {
+    const store = await this.stores.findActiveBySlug(slug);
+    const hits = await this.searcher.search(store.id, text);
+    return { match: hits.match, products: await this.byIds(hits.ids) };
+  }
+
   private async findProducts(
     storeId: string,
     query: ListProductsQuery,
   ): Promise<ProductSummaryDto[]> {
-    const where: Prisma.ProductWhereInput = {
-      storeId,
-      isActive: true,
-      ...(query.category && { categoryId: query.category }),
-      ...(query.search && {
-        OR: [
-          { name: { contains: query.search, mode: 'insensitive' } },
-          { description: { contains: query.search, mode: 'insensitive' } },
-        ],
-      }),
-    };
+    // ?search= usa a mesma busca sem acento (só a parte "exata").
+    const words = query.search ? searchWords(query.search) : [];
+    if (words.length > 0) {
+      const ids = await this.searcher.findExact(storeId, words);
+      const found = await this.byIds(ids);
+      return query.category
+        ? found.filter((product) => product.category?.id === query.category)
+        : found;
+    }
 
     const products = await this.prisma.product.findMany({
-      where,
+      where: {
+        storeId,
+        isActive: true,
+        ...(query.category && { categoryId: query.category }),
+      },
       include: productSummaryInclude,
       orderBy: [{ position: 'asc' }, { name: 'asc' }],
     });
-
     return products.map((product) => toProductSummary(product));
+  }
+
+  /** Produtos na mesma ordem dos ids (a ordem de importância da busca). */
+  private async byIds(ids: string[]): Promise<ProductSummaryDto[]> {
+    if (ids.length === 0) return [];
+    const products = await this.prisma.product.findMany({
+      where: { id: { in: ids } },
+      include: productSummaryInclude,
+    });
+    const byId = new Map(products.map((product) => [product.id, product]));
+    return ids.flatMap((id) => {
+      const product = byId.get(id);
+      return product ? [toProductSummary(product)] : [];
+    });
   }
 }
