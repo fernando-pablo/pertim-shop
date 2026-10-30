@@ -15,7 +15,9 @@ export class PrismaService extends PrismaClient implements OnModuleDestroy {
       adapter: new PrismaPg({
         connectionString: config.getOrThrow<string>('DATABASE_URL'),
         max: 10,
-        connectionTimeoutMillis: 3000,
+        // Na hospedagem, o banco grátis (Neon) dorme sem uso e acorda na
+        // primeira consulta. A folga evita erro enquanto ele acorda.
+        connectionTimeoutMillis: 10_000,
       }),
     });
   }

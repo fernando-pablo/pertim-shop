@@ -1,0 +1,59 @@
+# Receita da hospedagem da API no Render (Blueprint).
+# No Render: New > Blueprint > escolha este repositório. Ele cria a API e o
+# Redis sozinho. O banco fica no Neon: o endereço é colado na criação.
+# Mudou algo aqui? O Render atualiza na próxima vez que este arquivo mudar.
+
+services:
+  # API em Nest.js, montada a partir do api/Dockerfile
+  - type: web
+    name: pertim-shop-api
+    runtime: docker
+    plan: free
+    # Virgínia (EUA): perto do banco no Neon (AWS us-east-1) e da Vercel (iad1).
+    # A API consulta o banco várias vezes por página; ficar perto dele pesa mais.
+    region: virginia
+    dockerfilePath: ./api/Dockerfile
+    dockerContext: ./api
+    # Só publica de novo quando algo da API muda...
+    buildFilter:
+      paths:
+        - api/**
+    # ...e só depois que os testes do GitHub Actions passarem.
+    autoDeployTrigger: checksPass
+    # O Render confere a cada poucos segundos se a API está de pé. Ele usa a
+    # página inicial, que não consulta o banco: assim o Neon dorme quando
+    # ninguém usa e o limite grátis dele não acaba. O /health completo
+    # (banco e Redis) continua disponível para conferir.
+    healthCheckPath: /
+    envVars:
+      # Endereço do banco no Neon (conexão direta). Pedido na criação.
+      - key: DATABASE_URL
+        sync: false
+      # Endereço do Redis abaixo, preenchido pelo próprio Render.
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: pertim-shop-redis
+          property: connectionString
+      # Chave que assina o login (JWT): o Render sorteia uma chave longa.
+      # Ninguém precisa ver nem copiar.
+      - key: JWT_SECRET
+        generateValue: true
+      # Endereço do site na Vercel (ex.: https://pertim-shop.vercel.app).
+      # Só ele pode chamar a API pelo navegador. Pedido na criação.
+      - key: CORS_ORIGINS
+        sync: false
+      # Medição dos intermediários (/debug/proxy): ligada só até descobrir o
+      # TRUST_PROXY_HOPS certo. Depois volta para "false".
+      - key: PROXY_DEBUG
+        value: "true"
+
+  # Redis grátis do Render: cache da vitrine e limite de tentativas.
+  # Só a API enxerga (rede interna). Não guarda nada em disco: se reiniciar,
+  # o cache se refaz sozinho e a loja continua vendendo.
+  - type: keyvalue
+    name: pertim-shop-redis
+    plan: free
+    region: virginia
+    ipAllowList: []
+    maxmemoryPolicy: allkeys-lru

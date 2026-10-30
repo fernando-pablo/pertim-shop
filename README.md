@@ -6,7 +6,7 @@
 
 Plataforma de pedidos para pequenos comércios. Várias lojas num sistema só, cada uma com o seu link e o seu visual, e o pedido saindo pronto para o WhatsApp.
 
-> 🚧 **Em construção.** Etapas **1 a 4 de 5 concluídas:** a API (catálogo, pedidos, cache, limite de tentativas, testes automáticos e teste de carga), a vitrine em Next.js (lojas, busca, carrinho e pedido) e o painel do lojista (pedidos, produtos e categorias). **Falta a Etapa 5:** colocar no ar.
+> 🚧 **Em construção.** Etapas **1 a 4 de 5 concluídas:** a API (catálogo, pedidos, cache, limite de tentativas, testes automáticos e teste de carga), a vitrine em Next.js (lojas, busca, carrinho e pedido) e o painel do lojista (pedidos, produtos e categorias). **Em andamento, Etapa 5:** colocar no ar (Vercel, Render e Neon).
 
 ## Tecnologias
 
@@ -126,6 +126,26 @@ Os números de cada rodada ficam em [`load-test/results/`](load-test/results).
 
 Medido em outubro de 2026 no computador do autor, com Windows e Docker. A API, o banco, o Redis e o k6 rodaram na mesma máquina. Os números mudam de um computador para outro; o que vale é a comparação entre as duas colunas.
 
+## Publicação
+
+A demonstração roda em planos grátis, todos na costa leste dos EUA:
+
+| Parte | Onde | Região |
+|---|---|---|
+| Vitrine (Next.js) | [Vercel](https://vercel.com) | `iad1`, Washington |
+| API (Docker) | [Render](https://render.com) | Virgínia |
+| Redis | Render Key Value (só a API enxerga) | Virgínia |
+| PostgreSQL | [Neon](https://neon.com) | AWS `us-east-1`, Virgínia |
+
+- **[`render.yaml`](render.yaml)** descreve a API e o Redis (Blueprint do Render). O Render lê o arquivo e cria os dois.
+- **[`web/vercel.json`](web/vercel.json)** fixa a região da vitrine perto da API.
+- **Publicação automática:** a cada push na `main`, o GitHub Actions roda os testes. A API só é publicada se eles passarem (`autoDeployTrigger: checksPass`). A Vercel publica a vitrine.
+- **Variáveis no Render:** `DATABASE_URL` (conexão direta do Neon), `REDIS_URL` (o próprio Render preenche), `JWT_SECRET` (o Render sorteia), `CORS_ORIGINS` (endereço da vitrine) e `TRUST_PROXY_HOPS`.
+- **Variáveis na Vercel:** `API_URL` e `PUBLIC_API_URL` (endereço da API no Render) e `CONTACT_WHATSAPP`.
+- **API acordada:** no plano grátis, a API dorme depois de 15 minutos sem visitas e leva cerca de 1 minuto para acordar. Um monitor grátis ([UptimeRobot](https://uptimerobot.com)) abre a página inicial da API a cada 5 minutos, e ainda avisa por e-mail se o site cair.
+
+**Mudar para uma hospedagem paga é trocar variáveis, não código.** A API e a vitrine já rodam em Docker, e o banco e o Redis são PostgreSQL e Redis comuns, sem nada exclusivo do Neon ou do Render. Dá para levar tudo para um servidor próprio (VPS) com o mesmo `docker compose`.
+
 ## Endereços da API
 
 | Método | Endereço | O que faz |
@@ -204,6 +224,7 @@ pertim-shop/
 │   ├── src/proxy.ts        "porteiro" do painel: sem login, vai para a tela de entrada
 │   ├── src/components/     partes da tela (tema da loja, produto, carrinho...)
 │   ├── src/lib/            regras do carrinho, das opções e do pedido (com testes)
+│   ├── vercel.json         região da vitrine na Vercel
 │   └── Dockerfile          receita da imagem da vitrine
 ├── api/                    API em Nest.js
 │   ├── prisma/             desenho do banco (schema) e migrations
@@ -219,12 +240,14 @@ pertim-shop/
 │   │   ├── cache/          cache da vitrine no Redis
 │   │   ├── rate-limit/     limite de tentativas
 │   │   ├── health/         endpoint /health
-│   │   └── config/         validação das variáveis de ambiente
+│   │   ├── debug/          medição dos intermediários da hospedagem (desligada)
+│   │   └── config/         variáveis de ambiente e CORS
 │   ├── test/               testes de ponta a ponta e de integração
 │   └── Dockerfile          receita da imagem da API
 ├── load-test/              teste de carga (k6) e resultados
 ├── .github/workflows/      verificação automática (GitHub Actions)
 ├── docker-compose.yml      sobe vitrine, API, PostgreSQL e Redis juntos
+├── render.yaml             hospedagem da API e do Redis no Render
 └── .env.example            modelo das configurações
 ```
 
@@ -273,7 +296,12 @@ pertim-shop/
 - **O que vai para o cache.** A lista completa de produtos, as categorias, cada produto e os dados da loja. Busca e filtro vão direto ao banco, para ninguém conseguir encher a memória do Redis inventando buscas. Endereço ou produto que não existe também não é guardado. O pedido consulta preço e estoque sempre no banco, nunca no cache.
 - **Limite de tentativas com contador no Redis.** Cada IP tem um contador com prazo de validade (`INCR` com `EX`). Isso protege o login contra quem tenta adivinhar senhas e os pedidos contra robôs. O contador fica no Redis, e não na memória da API, para valer igual em todas as cópias da API.
 - **Se o Redis cair, a loja continua vendendo.** Sem Redis, a vitrine busca direto no banco e o limite de tentativas fica desligado. O `/health` avisa o problema, e o log registra no máximo um aviso por minuto. *A escolha foi priorizar a loja aberta em vez da proteção.*
-- **`/health` responde 503 quando algo cai.** A hospedagem usa esse código para saber que a API não está saudável.
+- **`/health` responde 503 quando algo cai.** No Docker Compose e no CI, é ele que diz se a API está saudável.
+- **Na hospedagem, a checagem é leve.** O Render confere a cada poucos segundos se a API responde. Se ele usasse o `/health`, que consulta o banco, o Neon nunca dormiria e as horas grátis do banco acabariam no meio do mês. Então o Render olha a página inicial (a API está de pé?), e o `/health` completo fica para conferir banco e Redis. *Num plano pago, sem esse limite, a checagem pode consultar o banco.*
+- **Tudo perto do banco.** O Render não tem servidor no Brasil. A API consulta o banco várias vezes em cada página, e o servidor da vitrine consulta a API, então os três ficam na mesma região (Virgínia). Ficar perto do banco pesa mais do que ficar perto do visitante.
+- **Só a vitrine chama a API pelo navegador (CORS).** Em produção, a variável `CORS_ORIGINS` lista o endereço da vitrine, e outros sites são recusados. No PC, vazia, libera tudo.
+- **O IP certo atrás dos intermediários.** Na hospedagem, a requisição passa por intermediários (proxies) antes de chegar na API, e cada um acrescenta um endereço no cabeçalho `X-Forwarded-For`. O `TRUST_PROXY_HOPS` diz quantos são, para o limite de tentativas contar o IP de cada pessoa e ninguém conseguir inventar outro IP. O número foi medido na hospedagem com a rota `/debug/proxy`, que fica desligada (404) fora da medição.
+- **O banco dorme e acorda.** O Neon grátis desliga o banco depois de 5 minutos sem uso e liga de novo na primeira consulta. A API espera até 10 segundos pela conexão, para ninguém ver erro enquanto ele acorda.
 - **Nenhum arquivo passa de 300 linhas.** Uma regra automática do linter (oxlint) impede arquivos gigantes.
 - **Configuração por variáveis de ambiente.** Senhas e endereços não ficam no código. Se faltar alguma variável, a API avisa qual é e não liga.
 
@@ -293,7 +321,10 @@ pertim-shop/
   - [x] painel do lojista: produtos, categorias e restaurar a demonstração
   - [x] fotos dos produtos e página inicial nova
   - [x] acabamento: busca que perdoa, página "Sobre" e botão "Quero um sistema assim"
-- [ ] **Etapa 5:** publicação (Render, Neon e Vercel)
+- [ ] **Etapa 5:** publicação
+  - [x] receita da hospedagem (`render.yaml`), CORS, região e checagem leve
+  - [ ] no ar: banco no Neon, API e Redis no Render, vitrine na Vercel
+  - [ ] intermediários medidos, monitor ligado e card no portfólio
 
 ## Autor
 

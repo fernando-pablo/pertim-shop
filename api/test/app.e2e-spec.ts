@@ -109,4 +109,8 @@ describe('API (e2e)', () => {
   it('GET /docs mostra a documentação (Swagger)', () => {
     return request(app.getHttpServer()).get('/docs').expect(200);
   });
+
+  it('a medição dos intermediários fica desligada por padrão', () => {
+    return request(app.getHttpServer()).get('/debug/proxy').expect(404);
+  });
 });
