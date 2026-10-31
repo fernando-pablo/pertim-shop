@@ -6,7 +6,9 @@
 
 Plataforma de pedidos para pequenos comércios. Várias lojas num sistema só, cada uma com o seu link e o seu visual, e o pedido saindo pronto para o WhatsApp.
 
-> 🚧 **Em construção.** Etapas **1 a 4 de 5 concluídas:** a API (catálogo, pedidos, cache, limite de tentativas, testes automáticos e teste de carga), a vitrine em Next.js (lojas, busca, carrinho e pedido) e o painel do lojista (pedidos, produtos e categorias). **Em andamento, Etapa 5:** colocar no ar (Vercel, Render e Neon).
+**Veja no ar: [pertim-shop.vercel.app](https://pertim-shop.vercel.app)**. São três lojas de demonstração: faça um pedido e depois clique em "Área do lojista" para ver o outro lado. A [API](https://pertim-shop-api.onrender.com/docs) também está no ar, com a documentação interativa.
+
+> As cinco etapas do roteiro estão concluídas: a API (catálogo, pedidos, cache, limite de tentativas, testes automáticos e teste de carga), a vitrine em Next.js (lojas, busca, carrinho e pedido), o painel do lojista (pedidos, produtos e categorias) e a publicação (Vercel, Render e Neon).
 
 ## Tecnologias
 
@@ -321,10 +323,10 @@ pertim-shop/
   - [x] painel do lojista: produtos, categorias e restaurar a demonstração
   - [x] fotos dos produtos e página inicial nova
   - [x] acabamento: busca que perdoa, página "Sobre" e botão "Quero um sistema assim"
-- [ ] **Etapa 5:** publicação
+- [x] **Etapa 5:** publicação
   - [x] receita da hospedagem (`render.yaml`), CORS, região e checagem leve
-  - [ ] no ar: banco no Neon, API e Redis no Render, vitrine na Vercel
-  - [ ] intermediários medidos, monitor ligado e card no portfólio
+  - [x] no ar: banco no Neon, API e Redis no Render, vitrine na Vercel
+  - [x] intermediários medidos (3) e monitor que mantém a API acordada
 
 ## Autor
 

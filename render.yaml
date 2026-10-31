@@ -43,10 +43,15 @@ services:
       # Só ele pode chamar a API pelo navegador. Pedido na criação.
       - key: CORS_ORIGINS
         sync: false
-      # Medição dos intermediários (/debug/proxy): ligada só até descobrir o
-      # TRUST_PROXY_HOPS certo. Depois volta para "false".
+      # Intermediários antes da API, medidos com o /debug/proxy em 30/10/2026:
+      # Cloudflare, a entrada do Render e um intermediário interno. Com 3, o
+      # limite de tentativas enxerga o IP de cada pessoa, e um IP inventado
+      # no cabeçalho X-Forwarded-For é ignorado.
+      - key: TRUST_PROXY_HOPS
+        value: "3"
+      # Medição dos intermediários: desligada depois de medir (responde 404).
       - key: PROXY_DEBUG
-        value: "true"
+        value: "false"
 
   # Redis grátis do Render: cache da vitrine e limite de tentativas.
   # Só a API enxerga (rede interna). Não guarda nada em disco: se reiniciar,
